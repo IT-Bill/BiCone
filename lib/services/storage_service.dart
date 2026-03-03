@@ -133,6 +133,43 @@ class StorageService extends ChangeNotifier {
     return _videosBox.containsKey(bvid);
   }
 
+  DownloadStatus getVideoStatus(String bvid) {
+    final data = _videosBox.get(bvid);
+    if (data == null) return DownloadStatus.none;
+    final map = Map<String, dynamic>.from(data);
+    final index = map['downloadStatus'] ?? 0;
+    if (index >= 0 && index < DownloadStatus.values.length) {
+      return DownloadStatus.values[index];
+    }
+    return DownloadStatus.none;
+  }
+
+  Future<void> deleteVideo(String bvid) async {
+    final data = _videosBox.get(bvid);
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      map['downloadStatus'] = DownloadStatus.deleted.index;
+      map['downloadProgress'] = 0.0;
+      // Keep localPath for reference but mark as deleted
+      await _videosBox.put(bvid, map);
+      _loadVideos();
+      notifyListeners();
+    }
+  }
+
+  Future<void> restoreVideo(String bvid) async {
+    final data = _videosBox.get(bvid);
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      map['downloadStatus'] = DownloadStatus.none.index;
+      map['downloadProgress'] = 0.0;
+      map['localPath'] = null;
+      await _videosBox.put(bvid, map);
+      _loadVideos();
+      notifyListeners();
+    }
+  }
+
   // ─── Settings ─────────────────────────────────────────
 
   String get rssHubUrl =>

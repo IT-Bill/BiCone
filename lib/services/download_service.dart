@@ -142,7 +142,9 @@ class DownloadService extends ChangeNotifier {
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) {
         task.status = DownloadStatus.none;
-        await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.none);
+        await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.none,
+            progress: 0.0);
+        await _cleanPartialFile(task.video.bvid);
       } else {
         task.status = DownloadStatus.failed;
         await _storage.updateVideoStatus(
@@ -153,7 +155,7 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void cancelDownload(String bvid) {
+  Future<void> cancelDownload(String bvid) async {
     final task = _tasks.cast<DownloadTask?>().firstWhere(
           (t) => t!.video.bvid == bvid,
           orElse: () => null,
@@ -162,7 +164,47 @@ class DownloadService extends ChangeNotifier {
       task.cancelToken?.cancel();
       task.status = DownloadStatus.none;
       _tasks.remove(task);
-      notifyListeners();
+    }
+    // Always reset status in storage (handles orphaned tasks after app restart)
+    await _storage.updateVideoStatus(bvid, DownloadStatus.none, progress: 0.0);
+    // Clean up partial file on disk
+    await _cleanPartialFile(bvid);
+    notifyListeners();
+  }
+
+  /// Delete any partial download file for [bvid].
+  Future<void> _cleanPartialFile(String bvid) async {
+    try {
+      // Find the video to get its title for filename
+      final video = _storage.videos.cast<VideoItem?>().firstWhere(
+            (v) => v!.bvid == bvid,
+            orElse: () => null,
+          );
+      if (video == null) return;
+
+      final dir = await _downloadDir;
+      final sanitized =
+          video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final file = File('$dir/$sanitized.flv');
+      if (await file.exists()) {
+        await file.delete();
+        debugPrint('Cleaned partial file: ${file.path}');
+      }
+    } catch (e) {
+      debugPrint('Error cleaning partial file: $e');
+    }
+  }
+
+  /// Call on app startup to reset any orphaned downloading/queued statuses.
+  Future<void> cleanupStuckDownloads() async {
+    final stuck = _storage.videos.where((v) =>
+        v.downloadStatus == DownloadStatus.downloading ||
+        v.downloadStatus == DownloadStatus.queued);
+    for (final video in stuck.toList()) {
+      debugPrint('Cleaning stuck download: ${video.bvid} (${video.title})');
+      await _cleanPartialFile(video.bvid);
+      await _storage.updateVideoStatus(
+          video.bvid, DownloadStatus.none, progress: 0.0);
     }
   }
 

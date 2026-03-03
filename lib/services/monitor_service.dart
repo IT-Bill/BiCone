@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'rss_service.dart';
 import 'storage_service.dart';
 import 'download_service.dart';
+import '../models/video_item.dart';
 
 /// Periodically checks RSSHub for new videos from subscribed UP主.
 class MonitorService extends ChangeNotifier {
@@ -67,11 +69,21 @@ class MonitorService extends ChangeNotifier {
         final videos = await rssService.getLatestVideos(sub.mid);
 
         for (final video in videos) {
-          if (!_storage.hasVideo(video.bvid)) {
-            await _storage.saveVideo(video);
-            _newVideoCount++;
+          // Skip videos that already exist (including deleted ones)
+          if (_storage.hasVideo(video.bvid)) {
+            // Check if the existing video is in deleted state — don't re-download
+            final existingStatus = _storage.getVideoStatus(video.bvid);
+            if (existingStatus == DownloadStatus.deleted) continue;
+            continue;
+          }
 
-            if (_storage.autoDownload) {
+          await _storage.saveVideo(video);
+          _newVideoCount++;
+
+          // Auto-download only videos published after the subscription was added
+          if (_storage.autoDownload) {
+            final videoPubDate = _parseDate(video.pubDate);
+            if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt)) {
               await _downloadService.addDownload(video);
             }
           }
@@ -84,6 +96,20 @@ class MonitorService extends ChangeNotifier {
     _lastCheck = DateTime.now();
     _isChecking = false;
     notifyListeners();
+  }
+
+  /// Try to parse various date formats (RFC 1123, ISO 8601, etc.)
+  DateTime? _parseDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+    // Try ISO 8601 first
+    final iso = DateTime.tryParse(dateStr);
+    if (iso != null) return iso;
+    // Try RFC 1123 (e.g., "Tue, 03 Mar 2026 20:19:17 GMT")
+    try {
+      return HttpDate.parse(dateStr);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

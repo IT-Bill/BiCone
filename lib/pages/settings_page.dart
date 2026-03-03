@@ -80,7 +80,7 @@ class SettingsPage extends StatelessWidget {
                     const Divider(height: 1),
                     SwitchListTile(
                       title: const Text('自动下载'),
-                      subtitle: const Text('检测到新视频时自动下载'),
+                      subtitle: const Text('仅自动下载订阅后发布的新视频，历史视频需手动下载'),
                       value: storage.autoDownload,
                       onChanged: (v) => storage.setAutoDownload(v),
                     ),

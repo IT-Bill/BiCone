@@ -20,6 +20,9 @@ void main() async {
   final download = DownloadService(api, storage);
   final monitor = MonitorService(storage, download);
 
+  // Clean up any downloads that were interrupted by app exit
+  await download.cleanupStuckDownloads();
+
   // Try to restore a previous session
   await auth.tryRestoreLogin();
 
