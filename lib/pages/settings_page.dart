@@ -126,17 +126,7 @@ class SettingsPage extends StatelessWidget {
                       title: Text('Hamster'),
                       subtitle: Text('版本 1.0.0'),
                     ),
-                    const Divider(height: 1),
-                    ListTile(
-                      title: const Text('上次检查'),
-                      subtitle: Text(
-                        monitor.lastCheck != null
-                            ? '${monitor.lastCheck!.hour.toString().padLeft(2, '0')}:'
-                              '${monitor.lastCheck!.minute.toString().padLeft(2, '0')}:'
-                              '${monitor.lastCheck!.second.toString().padLeft(2, '0')}'
-                            : '未检查',
-                      ),
-                    ),
+
                   ],
                 ),
               ),

@@ -19,8 +19,8 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<StorageService, MonitorService>(
-      builder: (context, storage, monitor, _) {
+    return Consumer3<StorageService, MonitorService, DownloadService>(
+      builder: (context, storage, monitor, download, _) {
         // Filter videos based on showDeleted toggle
         final allVideos = _showDeleted
             ? storage.videos.toList()
@@ -41,7 +41,23 @@ class _FeedPageState extends State<FeedPage> {
           length: 1 + upList.length,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('视频动态'),
+              centerTitle: true,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('视频动态'),
+                  if (monitor.lastCheck != null)
+                    Text(
+                      '上次检查 ${monitor.lastCheck!.hour.toString().padLeft(2, '0')}:'
+                      '${monitor.lastCheck!.minute.toString().padLeft(2, '0')}:'
+                      '${monitor.lastCheck!.second.toString().padLeft(2, '0')}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
               actions: [
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
