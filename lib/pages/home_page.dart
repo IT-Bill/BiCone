@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildTab(0, CupertinoIcons.play_rectangle,
-                          CupertinoIcons.play_rectangle_fill, '动态'),
+                          CupertinoIcons.play_rectangle_fill, '视频'),
                       _buildTab(1, CupertinoIcons.person_2,
                           CupertinoIcons.person_2_fill, '订阅'),
                       _buildTab(2, CupertinoIcons.arrow_down_circle,

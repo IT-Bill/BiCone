@@ -42,6 +42,9 @@ class _FeedPageState extends State<FeedPage> {
             ? allVideos
             : allVideos.where((v) => v.authorMid == _selectedUpMid).toList();
 
+        // Sort by publish date descending (newest first)
+        filteredVideos.sort((a, b) => _comparePubDate(b.pubDate, a.pubDate));
+
         return CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(
             middle: Column(
@@ -148,6 +151,24 @@ class _FeedPageState extends State<FeedPage> {
       ),
     );
   }
+
+  int _comparePubDate(String a, String b) {
+    final da = _parsePubDate(a);
+    final db = _parsePubDate(b);
+    if (da == null && db == null) return 0;
+    if (da == null) return -1;
+    if (db == null) return 1;
+    return da.compareTo(db);
+  }
+
+  DateTime? _parsePubDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+    try {
+      return DateTime.tryParse(dateStr) ?? HttpDate.parse(dateStr);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class _VideoGrid extends StatelessWidget {
@@ -226,7 +247,7 @@ class _VideoGrid extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: 0.96,
+              childAspectRatio: 0.98,
             ),
           ),
         ),
