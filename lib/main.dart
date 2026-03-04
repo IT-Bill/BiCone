@@ -6,6 +6,7 @@ import 'services/auth_service.dart';
 import 'services/api_service.dart';
 import 'services/download_service.dart';
 import 'services/monitor_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +19,9 @@ void main() async {
   final auth = AuthService(storage);
   final api = ApiService(storage);
   final download = DownloadService(api, storage);
-  final monitor = MonitorService(storage, download);
+  final notification = NotificationService();
+  await notification.init();
+  final monitor = MonitorService(storage, download, notification);
 
   // Clean up any downloads that were interrupted by app exit
   await download.cleanupStuckDownloads();

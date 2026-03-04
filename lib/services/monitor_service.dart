@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'rss_service.dart';
 import 'storage_service.dart';
 import 'download_service.dart';
+import 'notification_service.dart';
 import '../models/video_item.dart';
 
 /// Periodically checks RSSHub for new videos from subscribed UP主.
 class MonitorService extends ChangeNotifier {
   final StorageService _storage;
   final DownloadService _downloadService;
+  final NotificationService _notificationService;
 
   Timer? _timer;
   bool _isMonitoring = false;
@@ -22,7 +24,7 @@ class MonitorService extends ChangeNotifier {
   DateTime? get lastCheck => _lastCheck;
   int get newVideoCount => _newVideoCount;
 
-  MonitorService(this._storage, this._downloadService);
+  MonitorService(this._storage, this._downloadService, this._notificationService);
 
   void startMonitoring() {
     if (_isMonitoring) return;
@@ -82,12 +84,23 @@ class MonitorService extends ChangeNotifier {
 
           // Auto-download only videos published after the subscription was added
           // and only if a download path has been set
-          if (_storage.autoDownload && _storage.downloadPath.isNotEmpty) {
+          final willAutoDownload =
+              _storage.autoDownload && _storage.downloadPath.isNotEmpty;
+          bool didStartDownload = false;
+          if (willAutoDownload) {
             final videoPubDate = _parseDate(video.pubDate);
             if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt)) {
               await _downloadService.addDownload(video);
+              didStartDownload = true;
             }
           }
+
+          // Send local notification
+          await _notificationService.showNewVideoNotification(
+            upName: sub.name,
+            title: video.title,
+            autoDownloading: didStartDownload,
+          );
         }
       } catch (e) {
         debugPrint('Error checking videos for ${sub.name}: $e');
