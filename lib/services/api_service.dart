@@ -80,17 +80,34 @@ class ApiService {
   // ─── Public API ───────────────────────────────────────
 
   /// Fetch UP主 profile info by UID.
+  /// Tries WBI-signed endpoint first, falls back to public card API.
   Future<Map<String, dynamic>?> getUserInfo(int mid) async {
-    await _ensureWbiKeys();
-    final params = _signParams({'mid': mid.toString()});
-
+    // Try the WBI-signed endpoint first
     try {
+      await _ensureWbiKeys();
+      final params = _signParams({'mid': mid.toString()});
       final resp = await _dio.get(
         'https://api.bilibili.com/x/space/wbi/acc/info',
         queryParameters: params,
         options: _authOptions,
       );
       if (resp.data['code'] == 0) return resp.data['data'];
+    } catch (_) {}
+
+    // Fallback: public card API (no WBI signing needed)
+    try {
+      final resp = await _dio.get(
+        'https://api.bilibili.com/x/web-interface/card',
+        queryParameters: {'mid': mid},
+      );
+      if (resp.data['code'] == 0) {
+        final card = resp.data['data']['card'];
+        return {
+          'name': card['name'],
+          'face': card['face'],
+          'sign': card['sign'] ?? '',
+        };
+      }
     } catch (_) {}
     return null;
   }

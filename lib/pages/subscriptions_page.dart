@@ -80,6 +80,7 @@ class SubscriptionsPage extends StatelessWidget {
   void _showAddDialog(BuildContext context) {
     final controller = TextEditingController();
     bool isLoading = false;
+    String? errorText;
 
     showCupertinoDialog(
       context: context,
@@ -102,6 +103,17 @@ class SubscriptionsPage extends StatelessWidget {
                             Icon(CupertinoIcons.search, size: 18),
                       ),
                     ),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          errorText!,
+                          style: const TextStyle(
+                            color: CupertinoColors.destructiveRed,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
                     if (isLoading)
                       const Padding(
                         padding: EdgeInsets.only(top: 16),
@@ -120,15 +132,39 @@ class SubscriptionsPage extends StatelessWidget {
                   onPressed: isLoading
                       ? null
                       : () async {
-                          final uid =
-                              int.tryParse(controller.text.trim());
-                          if (uid == null) return;
+                          final text = controller.text.trim();
+                          if (text.isEmpty) {
+                            setDialogState(() {
+                              errorText = '请输入UID';
+                            });
+                            return;
+                          }
+                          final uid = int.tryParse(text);
+                          if (uid == null) {
+                            setDialogState(() {
+                              errorText = 'UID 必须为数字';
+                            });
+                            return;
+                          }
 
-                          setDialogState(() => isLoading = true);
-
-                          final api = context.read<ApiService>();
                           final storage =
                               context.read<StorageService>();
+
+                          // Check if already subscribed
+                          if (storage.subscriptions
+                              .any((s) => s.mid == uid)) {
+                            setDialogState(() {
+                              errorText = '已订阅该UP主';
+                            });
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isLoading = true;
+                            errorText = null;
+                          });
+
+                          final api = context.read<ApiService>();
                           final info = await api.getUserInfo(uid);
 
                           if (info != null) {
@@ -143,8 +179,10 @@ class SubscriptionsPage extends StatelessWidget {
                               Navigator.pop(dialogCtx);
                             }
                           } else {
-                            setDialogState(
-                                () => isLoading = false);
+                            setDialogState(() {
+                              isLoading = false;
+                              errorText = '未找到该UP主，请检查UID';
+                            });
                           }
                         },
                   child: const Text('添加'),
