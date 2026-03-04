@@ -85,4 +85,18 @@ class RssService {
       return [];
     }
   }
+
+  /// Check if a specific BV号 still appears in the UP主's RSSHub feed.
+  /// Returns `true` if found (video is still valid), `false` if not found,
+  /// and `null` if the check failed (network error, etc.).
+  Future<bool?> checkVideoExists(int uid, String bvid) async {
+    try {
+      final videos = await getLatestVideos(uid);
+      if (videos.isEmpty) return null; // feed is empty or errored
+      return videos.any((v) => v.bvid == bvid);
+    } catch (e) {
+      debugPrint('RSS checkVideoExists error: $e');
+      return null;
+    }
+  }
 }

@@ -196,6 +196,38 @@ class VideoCard extends StatelessWidget {
       }
     }
 
+    if (video.downloadStatus == DownloadStatus.invalidated) {
+      actions.add(Icon(CupertinoIcons.exclamationmark_triangle,
+          size: 16,
+          color: CupertinoColors.systemOrange.resolveFrom(context)));
+      actions.add(const SizedBox(width: 2));
+      actions.add(Text('已失效',
+          style: TextStyle(
+            fontSize: 11,
+            color: CupertinoColors.systemOrange.resolveFrom(context),
+          )));
+      if (onRestore != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: GestureDetector(
+            onTap: onRestore,
+            child: const Icon(CupertinoIcons.arrow_counterclockwise,
+                size: 18, color: AppTheme.biliPink),
+          ),
+        ));
+      }
+      if (onDelete != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: GestureDetector(
+            onTap: onDelete,
+            child: const Icon(CupertinoIcons.trash,
+                size: 18, color: CupertinoColors.destructiveRed),
+          ),
+        ));
+      }
+    }
+
     return actions;
   }
 
@@ -320,6 +352,10 @@ class VideoCard extends StatelessWidget {
     if (video.downloadStatus == DownloadStatus.failed) {
       return _tag(context, CupertinoIcons.exclamationmark_circle,
           '失败', CupertinoColors.destructiveRed);
+    }
+    if (video.downloadStatus == DownloadStatus.invalidated) {
+      return _tag(context, CupertinoIcons.exclamationmark_triangle,
+          '已失效', CupertinoColors.systemOrange);
     }
     return const SizedBox.shrink();
   }
@@ -449,6 +485,53 @@ class VideoCard extends StatelessWidget {
           ],
         ),
       ));
+      if (onDelete != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minSize: 28,
+            onPressed: onDelete,
+            child: const Icon(CupertinoIcons.trash,
+                size: 20, color: CupertinoColors.destructiveRed),
+          ),
+        ));
+      }
+    }
+
+    if (video.downloadStatus == DownloadStatus.invalidated) {
+      // Show "已失效" tag with retry and delete actions
+      actions.add(Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemOrange.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(CupertinoIcons.exclamationmark_triangle,
+                size: 14, color: CupertinoColors.systemOrange.resolveFrom(context)),
+            const SizedBox(width: 4),
+            Text('已失效',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.systemOrange.resolveFrom(context))),
+          ],
+        ),
+      ));
+      if (onRestore != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minSize: 28,
+            onPressed: onRestore,
+            child: const Icon(CupertinoIcons.arrow_counterclockwise,
+                size: 20, color: AppTheme.biliPink),
+          ),
+        ));
+      }
       if (onDelete != null) {
         actions.add(Padding(
           padding: const EdgeInsets.only(left: 8),

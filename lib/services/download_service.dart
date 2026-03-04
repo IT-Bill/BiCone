@@ -93,13 +93,16 @@ class DownloadService extends ChangeNotifier {
   final List<DownloadTask> _tasks = [];
   bool _isProcessing = false;
   String? _lastError;
+  String? _lastErrorBvid; // BV号 of the video that caused the last error
 
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
   String? get lastError => _lastError;
+  String? get lastErrorBvid => _lastErrorBvid;
 
   /// Clear the last error after it's been shown to the user.
   void clearLastError() {
     _lastError = null;
+    _lastErrorBvid = null;
     notifyListeners();
   }
 
@@ -256,6 +259,11 @@ class DownloadService extends ChangeNotifier {
             errorStr.contains('PathAccessException')) {
           _lastError = '下载路径无写入权限，请在设置中更换下载路径。\n'
               '推荐选择 Download 目录下的新文件夹。';
+        } else if (errorStr.contains('获取视频信息失败') ||
+            errorStr.contains('获取视频CID失败') ||
+            errorStr.contains('获取下载地址失败')) {
+          _lastError = '下载失败：视频已失效或网络异常';
+          _lastErrorBvid = task.video.bvid;
         } else {
           _lastError = '下载失败: $e';
         }

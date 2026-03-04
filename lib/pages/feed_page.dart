@@ -7,6 +7,7 @@ import '../models/video_item.dart';
 import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
 import '../services/download_service.dart';
+import '../services/rss_service.dart';
 import '../widgets/video_card.dart';
 
 class FeedPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   bool _showDeleted = true;
+  bool _showInvalidated = false;
   int _selectedUpMid = 0; // 0 = all
 
   @override
@@ -43,23 +45,65 @@ class _FeedPageState extends State<FeedPage> {
     final dl = context.read<DownloadService>();
     if (dl.lastError != null && mounted) {
       final error = dl.lastError!;
+      final errorBvid = dl.lastErrorBvid;
       dl.clearLastError();
-      showCupertinoDialog(
-        context: context,
-        builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('下载失败'),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(error),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('确定'),
+
+      if (errorBvid != null) {
+        // Video info / CID / download URL failure → offer retry or mark invalid
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('下载失败'),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(error),
             ),
-          ],
-        ),
-      );
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // Retry download
+                  final storage = context.read<StorageService>();
+                  final video = storage.videos.cast<VideoItem?>().firstWhere(
+                        (v) => v!.bvid == errorBvid,
+                        orElse: () => null,
+                      );
+                  if (video != null) {
+                    dl.addDownload(video);
+                  }
+                },
+                child: const Text('重试'),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.read<StorageService>().invalidateVideo(errorBvid);
+                },
+                child: const Text('标记为失效'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Other errors (permission, path, etc.)
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('下载失败'),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(error),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
@@ -108,11 +152,18 @@ class _FeedPageState extends State<FeedPage> {
   Widget build(BuildContext context) {
     return Consumer3<StorageService, MonitorService, DownloadService>(
       builder: (context, storage, monitor, download, _) {
-        final allVideos = _showDeleted
+        var allVideos = _showDeleted
             ? storage.videos.toList()
             : storage.videos
                 .where((v) => v.downloadStatus != DownloadStatus.deleted)
                 .toList();
+
+        // Hide invalidated videos unless toggled on
+        if (!_showInvalidated) {
+          allVideos = allVideos
+              .where((v) => v.downloadStatus != DownloadStatus.invalidated)
+              .toList();
+        }
 
         // Build unique UP主 list
         final upMap = <int, String>{};
@@ -227,6 +278,13 @@ class _FeedPageState extends State<FeedPage> {
             },
             child: Text(_showDeleted ? '隐藏已忽略视频' : '显示已忽略视频'),
           ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _showInvalidated = !_showInvalidated);
+              Navigator.pop(ctx);
+            },
+            child: Text(_showInvalidated ? '隐藏已失效视频' : '显示已失效视频'),
+          ),
         ],
         cancelButton: CupertinoActionSheetAction(
           isDefaultAction: true,
@@ -322,14 +380,36 @@ class _VideoGrid extends StatelessWidget {
                       : null,
                   onDelete: video.downloadStatus == DownloadStatus.completed
                       ? () => _confirmDelete(context, video)
-                      : null,
+                      : video.downloadStatus == DownloadStatus.invalidated
+                          ? () {
+                              context
+                                  .read<StorageService>()
+                                  .deleteVideo(video.bvid);
+                            }
+                          : null,
                   onRestore: video.downloadStatus == DownloadStatus.deleted
                       ? () {
                           context
                               .read<StorageService>()
                               .restoreVideo(video.bvid);
                         }
-                      : null,
+                      : video.downloadStatus == DownloadStatus.invalidated
+                          ? () async {
+                              // Retry: restore to none, then download
+                              final storage = context.read<StorageService>();
+                              await storage.restoreVideo(video.bvid);
+                              if (!context.mounted) return;
+                              final dl = context.read<DownloadService>();
+                              final restored = storage.videos.cast<VideoItem?>().firstWhere(
+                                    (v) => v!.bvid == video.bvid,
+                                    orElse: () => null,
+                                  );
+                              if (restored != null) {
+                                if (!await onBeforeDownload()) return;
+                                dl.addDownload(restored);
+                              }
+                            }
+                          : null,
                 );
               },
               childCount: videos.length,
@@ -346,39 +426,107 @@ class _VideoGrid extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, VideoItem video) {
+  void _confirmDelete(BuildContext context, VideoItem video) async {
+    // Show a loading indicator while checking validity
     showCupertinoDialog(
       context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('删除视频'),
-        content: Text('确定要删除「${video.title}」吗？\n文件将被删除，且不会被自动重新下载。'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+      barrierDismissible: false,
+      builder: (ctx) => const CupertinoAlertDialog(
+        content: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CupertinoActivityIndicator(),
+              SizedBox(height: 12),
+              Text('正在检查视频状态...'),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (video.localPath != null) {
-                try {
-                  final file = File(video.localPath!);
-                  if (await file.exists()) {
-                    await file.delete();
-                  }
-                } catch (e) {
-                  debugPrint('Error deleting file: $e');
-                }
-              }
-              if (context.mounted) {
-                context.read<StorageService>().deleteVideo(video.bvid);
-              }
-            },
-            child: const Text('删除'),
-          ),
-        ],
+        ),
       ),
     );
+
+    // Check video validity via RSSHub
+    final storage = context.read<StorageService>();
+    final rssService = RssService(rssHubUrl: storage.rssHubUrl);
+    final exists = await rssService.checkVideoExists(video.authorMid, video.bvid);
+
+    if (!context.mounted) return;
+    Navigator.pop(context); // dismiss loading
+
+    if (exists == false) {
+      // Video is invalid — warn user
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('视频已失效'),
+          content: Text(
+            '「${video.title}」在源站已失效，删除后可能无法再次下载。\n确定要删除吗？',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(ctx);
+                if (video.localPath != null) {
+                  try {
+                    final file = File(video.localPath!);
+                    if (await file.exists()) {
+                      await file.delete();
+                    }
+                  } catch (e) {
+                    debugPrint('Error deleting file: $e');
+                  }
+                }
+                if (context.mounted) {
+                  context.read<StorageService>().deleteVideo(video.bvid);
+                }
+              },
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Video is still valid (or check inconclusive) — normal delete flow
+      final statusNote = exists == true ? '\n\n视频状态：正常' : '';
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('删除视频'),
+          content: Text('确定要删除「${video.title}」吗？\n文件将被删除，且不会被自动重新下载。$statusNote'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(ctx);
+                if (video.localPath != null) {
+                  try {
+                    final file = File(video.localPath!);
+                    if (await file.exists()) {
+                      await file.delete();
+                    }
+                  } catch (e) {
+                    debugPrint('Error deleting file: $e');
+                  }
+                }
+                if (context.mounted) {
+                  context.read<StorageService>().deleteVideo(video.bvid);
+                }
+              },
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

@@ -175,6 +175,18 @@ class StorageService extends ChangeNotifier {
     }
   }
 
+  Future<void> invalidateVideo(String bvid) async {
+    final data = _videosBox.get(bvid);
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      map['downloadStatus'] = DownloadStatus.invalidated.index;
+      map['downloadProgress'] = 0.0;
+      await _videosBox.put(bvid, map);
+      _loadVideos();
+      notifyListeners();
+    }
+  }
+
   // ─── Settings ─────────────────────────────────────────
 
   String get rssHubUrl =>

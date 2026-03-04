@@ -71,11 +71,12 @@ class MonitorService extends ChangeNotifier {
         final videos = await rssService.getLatestVideos(sub.mid);
 
         for (final video in videos) {
-          // Skip videos that already exist (including deleted ones)
+          // Skip videos that already exist (including deleted/invalidated ones)
           if (_storage.hasVideo(video.bvid)) {
-            // Check if the existing video is in deleted state — don't re-download
+            // Check if the existing video is in deleted/invalidated state — don't re-download
             final existingStatus = _storage.getVideoStatus(video.bvid);
             if (existingStatus == DownloadStatus.deleted) continue;
+            if (existingStatus == DownloadStatus.invalidated) continue;
             continue;
           }
 
