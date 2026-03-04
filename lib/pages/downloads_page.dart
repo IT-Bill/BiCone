@@ -139,17 +139,32 @@ class _ActiveDownloads extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text(
-                        task.status == DownloadStatus.queued
-                            ? '排队中...'
-                            : '${(task.progress * 100).toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: CupertinoColors.secondaryLabel
-                              .resolveFrom(context),
+                      Expanded(
+                        child: Text(
+                          task.status == DownloadStatus.queued
+                              ? '排队中...'
+                              : '${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: CupertinoColors.secondaryLabel
+                                .resolveFrom(context),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      if (task.status == DownloadStatus.downloading &&
+                          task.speed > 0) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${task.formattedSpeed}  剩余${task.formattedEta}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: CupertinoColors.tertiaryLabel
+                                .resolveFrom(context),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         minSize: 28,
@@ -239,7 +254,7 @@ class _CompletedDownloads extends StatelessWidget {
                   style: const TextStyle(fontSize: 15),
                 ),
                 subtitle: Text(
-                  '${video.author}  ${_formatDownloadedAt(video.downloadedAt)}',
+                  '${video.author}  ${_formatFileSize(video.fileSize)}  ${_formatDownloadedAt(video.downloadedAt)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -249,6 +264,20 @@ class _CompletedDownloads extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _formatFileSize(int? bytes) {
+    if (bytes == null || bytes <= 0) return '';
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
   }
 
   String _formatDownloadedAt(String? downloadedAt) {

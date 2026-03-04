@@ -116,6 +116,7 @@ class StorageService extends ChangeNotifier {
     DownloadStatus status, {
     double? progress,
     String? localPath,
+    int? fileSize,
   }) async {
     final data = _videosBox.get(bvid);
     if (data != null) {
@@ -123,6 +124,7 @@ class StorageService extends ChangeNotifier {
       map['downloadStatus'] = status.index;
       if (progress != null) map['downloadProgress'] = progress;
       if (localPath != null) map['localPath'] = localPath;
+      if (fileSize != null) map['fileSize'] = fileSize;
       if (status == DownloadStatus.completed) {
         map['downloadedAt'] = DateTime.now().toUtc().toIso8601String();
       }

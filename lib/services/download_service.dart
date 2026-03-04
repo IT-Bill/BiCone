@@ -10,13 +10,79 @@ class DownloadTask {
   double progress;
   DownloadStatus status;
   CancelToken? cancelToken;
+  int receivedBytes;
+  int totalBytes;
+  double speed; // bytes per second
+  DateTime? _lastSpeedUpdate;
+  int _lastReceivedBytes;
 
   DownloadTask({
     required this.video,
     this.progress = 0.0,
     this.status = DownloadStatus.queued,
     this.cancelToken,
-  });
+    this.receivedBytes = 0,
+    this.totalBytes = 0,
+    this.speed = 0,
+  }) : _lastReceivedBytes = 0;
+
+  String get formattedSpeed {
+    if (speed <= 0) return '';
+    if (speed >= 1024 * 1024) {
+      return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    }
+    return '${(speed / 1024).toStringAsFixed(0)} KB/s';
+  }
+
+  String get formattedSize {
+    final received = _formatBytes(receivedBytes);
+    final total = totalBytes > 0 ? _formatBytes(totalBytes) : '?';
+    return '$received / $total';
+  }
+
+  String get formattedEta {
+    if (speed <= 0 || totalBytes <= 0) return '';
+    final remaining = totalBytes - receivedBytes;
+    final seconds = (remaining / speed).round();
+    if (seconds < 60) return '${seconds}s';
+    if (seconds < 3600) return '${seconds ~/ 60}m${seconds % 60}s';
+    return '${seconds ~/ 3600}h${(seconds % 3600) ~/ 60}m';
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
+  }
+
+  void updateProgress(int received, int total) {
+    receivedBytes = received;
+    totalBytes = total;
+    if (total > 0) {
+      progress = received / total;
+    }
+
+    final now = DateTime.now();
+    if (_lastSpeedUpdate != null) {
+      final elapsed = now.difference(_lastSpeedUpdate!).inMilliseconds;
+      if (elapsed >= 500) {
+        final bytesDelta = received - _lastReceivedBytes;
+        speed = bytesDelta / (elapsed / 1000);
+        _lastSpeedUpdate = now;
+        _lastReceivedBytes = received;
+      }
+    } else {
+      _lastSpeedUpdate = now;
+      _lastReceivedBytes = received;
+    }
+  }
 }
 
 class DownloadService extends ChangeNotifier {
@@ -137,8 +203,8 @@ class DownloadService extends ChangeNotifier {
         savePath,
         cancelToken: task.cancelToken,
         onReceiveProgress: (received, total) {
-          if (total > 0) {
-            task.progress = received / total;
+          if (total > 0 && !task.cancelToken!.isCancelled) {
+            task.updateProgress(received, total);
             _storage.updateVideoStatus(
               task.video.bvid,
               DownloadStatus.downloading,
@@ -151,18 +217,32 @@ class DownloadService extends ChangeNotifier {
 
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
+      // Get file size
+      int? fileSize;
+      try {
+        final file = File(savePath);
+        if (await file.exists()) {
+          fileSize = await file.length();
+        }
+      } catch (_) {}
       await _storage.updateVideoStatus(
         task.video.bvid,
         DownloadStatus.completed,
         progress: 1.0,
         localPath: savePath,
+        fileSize: fileSize,
       );
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) {
-        task.status = DownloadStatus.none;
-        await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.none,
-            progress: 0.0);
-        await _cleanPartialFile(task.video.bvid);
+        // cancelDownload() already handled status reset and file cleanup
+        // Only handle if task is still in the list (shouldn't normally happen)
+        if (_tasks.contains(task)) {
+          task.status = DownloadStatus.none;
+          await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.none,
+              progress: 0.0);
+          _tasks.remove(task);
+          await _cleanPartialFile(task.video.bvid);
+        }
       } else {
         debugPrint('Download failed for ${task.video.bvid}: $e');
         task.status = DownloadStatus.failed;

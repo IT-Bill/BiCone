@@ -13,6 +13,7 @@ class VideoItem {
   double downloadProgress;
   String? localPath;
   String? downloadedAt;
+  int? fileSize;
 
   VideoItem({
     required this.bvid,
@@ -27,6 +28,7 @@ class VideoItem {
     this.downloadProgress = 0.0,
     this.localPath,
     this.downloadedAt,
+    this.fileSize,
   });
 
   factory VideoItem.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class VideoItem {
       downloadProgress: (json['downloadProgress'] ?? 0.0).toDouble(),
       localPath: json['localPath'],
       downloadedAt: json['downloadedAt'],
+      fileSize: json['fileSize'],
     );
   }
 
@@ -59,5 +62,6 @@ class VideoItem {
         'downloadProgress': downloadProgress,
         'localPath': localPath,
         'downloadedAt': downloadedAt,
+        'fileSize': fileSize,
       };
 }
