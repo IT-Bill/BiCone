@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 import '../models/video_item.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
@@ -27,8 +26,16 @@ class DownloadService extends ChangeNotifier {
 
   final List<DownloadTask> _tasks = [];
   bool _isProcessing = false;
+  String? _lastError;
 
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
+  String? get lastError => _lastError;
+
+  /// Clear the last error after it's been shown to the user.
+  void clearLastError() {
+    _lastError = null;
+    notifyListeners();
+  }
 
   List<DownloadTask> get activeTasks => _tasks
       .where((t) =>
@@ -47,11 +54,11 @@ class DownloadService extends ChangeNotifier {
   }
 
   Future<String> get _downloadDir async {
-    final customPath = _storage.downloadPath;
-    if (customPath.isNotEmpty) return customPath;
-
-    final dir = await getApplicationDocumentsDirectory();
-    final downloadDir = Directory('${dir.path}/Squirrel/Downloads');
+    final dirPath = _storage.downloadPath;
+    if (dirPath.isEmpty) {
+      throw Exception('下载路径未设置，请先在设置中选择下载路径');
+    }
+    final downloadDir = Directory(dirPath);
     if (!await downloadDir.exists()) {
       await downloadDir.create(recursive: true);
     }
@@ -59,6 +66,14 @@ class DownloadService extends ChangeNotifier {
   }
 
   Future<void> addDownload(VideoItem video) async {
+    // Remove any existing failed/completed task so it can be retried
+    _tasks.removeWhere((t) =>
+        t.video.bvid == video.bvid &&
+        (t.status == DownloadStatus.failed ||
+         t.status == DownloadStatus.completed ||
+         t.status == DownloadStatus.none));
+
+    // Skip if already downloading or queued
     if (_tasks.any((t) => t.video.bvid == video.bvid)) return;
 
     final task = DownloadTask(video: video);
@@ -94,6 +109,7 @@ class DownloadService extends ChangeNotifier {
 
     try {
       // 1. Get video info → CID
+      debugPrint('Download: fetching video info for ${task.video.bvid}');
       final videoInfo = await _apiService.getVideoInfo(task.video.bvid);
       if (videoInfo == null) throw Exception('获取视频信息失败');
 
@@ -101,6 +117,7 @@ class DownloadService extends ChangeNotifier {
       if (cid == null) throw Exception('获取视频CID失败');
 
       // 2. Get stream URL
+      debugPrint('Download: fetching stream URL for ${task.video.bvid}, cid=$cid');
       final downloadUrl = await _apiService.getVideoDownloadUrl(
         task.video.bvid,
         cid,
@@ -110,6 +127,7 @@ class DownloadService extends ChangeNotifier {
 
       // 3. Download
       final dir = await _downloadDir;
+      debugPrint('Download: saving to $dir');
       final sanitized =
           task.video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
       final savePath = '$dir/$sanitized.flv';
@@ -146,9 +164,21 @@ class DownloadService extends ChangeNotifier {
             progress: 0.0);
         await _cleanPartialFile(task.video.bvid);
       } else {
+        debugPrint('Download failed for ${task.video.bvid}: $e');
         task.status = DownloadStatus.failed;
         await _storage.updateVideoStatus(
             task.video.bvid, DownloadStatus.failed);
+
+        // Detect permission/path errors and provide user-friendly message
+        final errorStr = e.toString();
+        if (errorStr.contains('Operation not permitted') ||
+            errorStr.contains('Permission denied') ||
+            errorStr.contains('PathAccessException')) {
+          _lastError = '下载路径无写入权限，请在设置中更换下载路径。\n'
+              '推荐选择 Download 目录下的新文件夹。';
+        } else {
+          _lastError = '下载失败: $e';
+        }
       }
     }
 

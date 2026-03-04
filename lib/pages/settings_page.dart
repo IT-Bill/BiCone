@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/monitor_service.dart';
@@ -161,8 +161,7 @@ class SettingsPage extends StatelessWidget {
 
   Future<String> _getDownloadPath(StorageService storage) async {
     if (storage.downloadPath.isNotEmpty) return storage.downloadPath;
-    final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}/Squirrel/Downloads';
+    return '未设置（点击选择）';
   }
 
   String _qualityName(int qn) {
@@ -321,35 +320,15 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showDownloadPathEditor(
-      BuildContext context, StorageService storage) {
-    final controller =
-        TextEditingController(text: storage.downloadPath);
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('下载路径'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: '留空使用默认路径',
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              storage.setDownloadPath(controller.text.trim());
-              Navigator.pop(ctx);
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
+      BuildContext context, StorageService storage) async {
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: '选择下载路径',
+      initialDirectory: storage.downloadPath.isNotEmpty
+          ? storage.downloadPath
+          : null,
     );
+    if (result != null) {
+      storage.setDownloadPath(result);
+    }
   }
 }

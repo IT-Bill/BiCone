@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/video_item.dart';
 import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
@@ -17,6 +18,90 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
   bool _showDeleted = false;
   int _selectedUpMid = 0; // 0 = all
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for download errors
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dl = context.read<DownloadService>();
+      dl.addListener(_onDownloadChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Safe removal: only remove if widget is still in tree
+    try {
+      context.read<DownloadService>().removeListener(_onDownloadChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _onDownloadChanged() {
+    final dl = context.read<DownloadService>();
+    if (dl.lastError != null && mounted) {
+      final error = dl.lastError!;
+      dl.clearLastError();
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('下载失败'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(error),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<bool> _ensureDownloadPath() async {
+    final storage = context.read<StorageService>();
+    if (storage.downloadPath.isNotEmpty) return true;
+
+    // First time: must set download path before downloading
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('设置下载路径'),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            '首次下载需要设置保存路径。\n推荐在 Download 目录下创建新文件夹。',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('选择文件夹'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final dir = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: '选择下载路径',
+      );
+      if (dir != null) {
+        storage.setDownloadPath(dir);
+        return true;
+      }
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +205,7 @@ class _FeedPageState extends State<FeedPage> {
                   child: _VideoGrid(
                     videos: filteredVideos,
                     showDeleted: _showDeleted,
+                    onBeforeDownload: _ensureDownloadPath,
                   ),
                 ),
               ],
@@ -174,7 +260,8 @@ class _FeedPageState extends State<FeedPage> {
 class _VideoGrid extends StatelessWidget {
   final List<VideoItem> videos;
   final bool showDeleted;
-  const _VideoGrid({required this.videos, this.showDeleted = false});
+  final Future<bool> Function() onBeforeDownload;
+  const _VideoGrid({required this.videos, this.showDeleted = false, required this.onBeforeDownload});
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +314,7 @@ class _VideoGrid extends StatelessWidget {
                       await dl.cancelDownload(video.bvid);
                       return;
                     }
+                    if (!await onBeforeDownload()) return;
                     dl.addDownload(video);
                   },
                   onDelete: video.downloadStatus == DownloadStatus.completed

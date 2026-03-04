@@ -81,7 +81,8 @@ class MonitorService extends ChangeNotifier {
           _newVideoCount++;
 
           // Auto-download only videos published after the subscription was added
-          if (_storage.autoDownload) {
+          // and only if a download path has been set
+          if (_storage.autoDownload && _storage.downloadPath.isNotEmpty) {
             final videoPubDate = _parseDate(video.pubDate);
             if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt)) {
               await _downloadService.addDownload(video);
