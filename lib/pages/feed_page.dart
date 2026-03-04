@@ -17,7 +17,7 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
-  bool _showDeleted = false;
+  bool _showDeleted = true;
   int _selectedUpMid = 0; // 0 = all
 
   @override
@@ -133,6 +133,13 @@ class _FeedPageState extends State<FeedPage> {
 
         return CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(
+            padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              minSize: 0,
+              onPressed: () => _showOptions(context),
+              child: const Icon(CupertinoIcons.ellipsis_circle, size: 22),
+            ),
             middle: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -150,28 +157,19 @@ class _FeedPageState extends State<FeedPage> {
                   ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CupertinoButton(
+            trailing: Consumer<MonitorService>(
+              builder: (context, monitor, _) {
+                return CupertinoButton(
                   padding: EdgeInsets.zero,
-                  onPressed: () => _showOptions(context),
-                  child: const Icon(CupertinoIcons.ellipsis_circle, size: 22),
-                ),
-                Consumer<MonitorService>(
-                  builder: (context, monitor, _) {
-                    return CupertinoButton(
-                      padding: const EdgeInsets.only(left: 8),
-                      onPressed: monitor.isChecking
-                          ? null
-                          : () => monitor.checkForNewVideos(),
-                      child: monitor.isChecking
-                          ? const CupertinoActivityIndicator()
-                          : const Icon(CupertinoIcons.refresh, size: 22),
-                    );
-                  },
-                ),
-              ],
+                  minSize: 0,
+                  onPressed: monitor.isChecking
+                      ? null
+                      : () => monitor.checkForNewVideos(),
+                  child: monitor.isChecking
+                      ? const CupertinoActivityIndicator()
+                      : const Icon(CupertinoIcons.refresh, size: 22),
+                );
+              },
             ),
           ),
           child: SafeArea(
