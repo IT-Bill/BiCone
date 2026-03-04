@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'theme.dart';
 import 'services/auth_service.dart';
@@ -10,12 +10,10 @@ class SquirrelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return CupertinoApp(
       title: 'Squirrel',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
       home: Consumer<AuthService>(
         builder: (context, auth, _) {
           if (auth.isLoggedIn) {

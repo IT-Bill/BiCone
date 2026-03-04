@@ -41,21 +41,32 @@ class AuthService extends ChangeNotifier {
   Future<void> tryRestoreLogin() async {
     if (_storage.isLoggedIn) {
       try {
+        // Verify session is still valid
         final response = await _dio.get(
           'https://api.bilibili.com/x/member/my',
           options:
               Options(headers: {'Cookie': 'SESSDATA=${_storage.sessdata}'}),
         );
         if (response.data['code'] == 0) {
-          final data = response.data['data'];
-          await _storage.saveAuth(
-            sessdata: _storage.sessdata!,
-            biliJct: _storage.biliJct ?? '',
-            userId: _storage.userId ?? '${data['mid']}',
-            refreshToken: _storage.refreshToken ?? '',
-            userName: data['name'],
-            userFace: data['face'],
-          );
+          // Refresh user info via public API (no auth needed)
+          final uid = _storage.userId ?? '${response.data['data']['mid']}';
+          try {
+            final cardResp = await _dio.get(
+              'https://api.bilibili.com/x/web-interface/card',
+              queryParameters: {'mid': uid, 'photo': false},
+            );
+            if (cardResp.data['code'] == 0) {
+              final card = cardResp.data['data']['card'];
+              await _storage.saveAuth(
+                sessdata: _storage.sessdata!,
+                biliJct: _storage.biliJct ?? '',
+                userId: uid,
+                refreshToken: _storage.refreshToken ?? '',
+                userName: card['name'],
+                userFace: card['face'],
+              );
+            }
+          } catch (_) {}
           _state = AuthState.loggedIn;
           notifyListeners();
           return;
@@ -142,21 +153,21 @@ class AuthService extends ChangeNotifier {
           refreshToken: refreshToken,
         );
 
-        // Fetch user profile
+        // Fetch user profile via public API (no auth needed)
         try {
           final userResp = await _dio.get(
-            'https://api.bilibili.com/x/member/my',
-            options: Options(headers: {'Cookie': 'SESSDATA=$sessdata'}),
+            'https://api.bilibili.com/x/web-interface/card',
+            queryParameters: {'mid': dedeUserId, 'photo': false},
           );
           if (userResp.data['code'] == 0) {
-            final u = userResp.data['data'];
+            final card = userResp.data['data']['card'];
             await _storage.saveAuth(
               sessdata: sessdata,
               biliJct: biliJct,
               userId: dedeUserId,
               refreshToken: refreshToken,
-              userName: u['name'],
-              userFace: u['face'],
+              userName: card['name'],
+              userFace: card['face'],
             );
           }
         } catch (_) {}

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
@@ -10,118 +10,125 @@ class SubscriptionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('我的订阅'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => _showAddDialog(context),
+          child: const Icon(CupertinoIcons.add, size: 22),
+        ),
+      ),
+      child: SafeArea(
+        child: Consumer<StorageService>(
+          builder: (context, storage, _) {
+            final subs = storage.subscriptions;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('我的订阅')),
-      body: Consumer<StorageService>(
-        builder: (context, storage, _) {
-          final subs = storage.subscriptions;
-
-          if (subs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.people_outline, size: 80, color: cs.outlineVariant),
-                  const SizedBox(height: 16),
-                  Text(
-                    '暂无订阅',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '点击右下角按钮添加UP主',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: cs.outline),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: subs.length,
-            itemBuilder: (context, index) {
-              final sub = subs[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SubscriptionCard(
-                  subscription: sub,
-                  onDelete: () => _confirmDelete(context, storage, sub),
+            if (subs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(CupertinoIcons.person_2,
+                        size: 64,
+                        color: CupertinoColors.tertiaryLabel
+                            .resolveFrom(context)),
+                    const SizedBox(height: 16),
+                    Text(
+                      '暂无订阅',
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: CupertinoColors.secondaryLabel
+                            .resolveFrom(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '点击右上角 + 添加UP主',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.tertiaryLabel
+                            .resolveFrom(context),
+                      ),
+                    ),
+                  ],
                 ),
               );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('添加订阅'),
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              itemCount: subs.length,
+              itemBuilder: (context, index) {
+                final sub = subs[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: SubscriptionCard(
+                    subscription: sub,
+                    onDelete: () =>
+                        _confirmDelete(context, storage, sub),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
-
-  // ── Add subscription dialog ──
 
   void _showAddDialog(BuildContext context) {
     final controller = TextEditingController();
     bool isLoading = false;
 
-    showDialog(
+    showCupertinoDialog(
       context: context,
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            return AlertDialog(
+            return CupertinoAlertDialog(
               title: const Text('添加 UP主'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: controller,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'UP主 UID',
-                      hintText: '请输入UP主的UID',
-                      prefixIcon: Icon(Icons.person_search),
+              content: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Column(
+                  children: [
+                    CupertinoTextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      placeholder: '请输入UP主的UID',
+                      prefix: const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child:
+                            Icon(CupertinoIcons.search, size: 18),
+                      ),
                     ),
-                  ),
-                  if (isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16),
-                      child: CircularProgressIndicator(),
-                    ),
-                ],
+                    if (isLoading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16),
+                        child: CupertinoActivityIndicator(),
+                      ),
+                  ],
+                ),
               ),
               actions: [
-                TextButton(
+                CupertinoDialogAction(
                   onPressed: () => Navigator.pop(dialogCtx),
                   child: const Text('取消'),
                 ),
-                FilledButton(
+                CupertinoDialogAction(
+                  isDefaultAction: true,
                   onPressed: isLoading
                       ? null
                       : () async {
-                          final uid = int.tryParse(controller.text.trim());
-                          if (uid == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('请输入有效的UID')),
-                            );
-                            return;
-                          }
+                          final uid =
+                              int.tryParse(controller.text.trim());
+                          if (uid == null) return;
 
                           setDialogState(() => isLoading = true);
 
                           final api = context.read<ApiService>();
-                          final storage = context.read<StorageService>();
+                          final storage =
+                              context.read<StorageService>();
                           final info = await api.getUserInfo(uid);
 
                           if (info != null) {
@@ -132,21 +139,12 @@ class SubscriptionsPage extends StatelessWidget {
                               sign: info['sign'] ?? '',
                             );
                             await storage.addSubscription(sub);
-
-                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('已订阅 ${sub.name}')),
-                              );
+                            if (dialogCtx.mounted) {
+                              Navigator.pop(dialogCtx);
                             }
                           } else {
-                            setDialogState(() => isLoading = false);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('未找到该用户，请检查UID')),
-                              );
-                            }
+                            setDialogState(
+                                () => isLoading = false);
                           }
                         },
                   child: const Text('添加'),
@@ -159,31 +157,24 @@ class SubscriptionsPage extends StatelessWidget {
     );
   }
 
-  // ── Confirm deletion ──
-
   void _confirmDelete(
       BuildContext context, StorageService storage, Subscription sub) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => CupertinoAlertDialog(
         title: const Text('取消订阅'),
         content: Text('确定要取消订阅 ${sub.name} 吗？'),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('取消'),
           ),
-          FilledButton(
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             onPressed: () {
               storage.removeSubscription(sub.mid);
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('已取消订阅 ${sub.name}')),
-              );
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
             child: const Text('确定'),
           ),
         ],

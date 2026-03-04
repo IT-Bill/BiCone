@@ -1,8 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/auth_service.dart';
+import '../theme.dart';
 import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -23,15 +24,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
+    return CupertinoPageScaffold(
+      child: Container(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [cs.primaryContainer, cs.surface],
+            colors: [
+              Color(0xFFFCE4EC), // light pink
+              CupertinoColors.systemGroupedBackground,
+            ],
           ),
         ),
         child: SafeArea(
@@ -44,7 +46,8 @@ class _LoginPageState extends State<LoginPage> {
                   if (auth.state == AuthState.loggedIn) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => const HomePage()),
+                        CupertinoPageRoute(
+                            builder: (_) => const HomePage()),
                       );
                     });
                   }
@@ -55,87 +58,102 @@ class _LoginPageState extends State<LoginPage> {
                       // ── Logo ──
                       Container(
                         padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: cs.primary,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.biliPink,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.pets, size: 48, color: cs.onPrimary),
+                        child: const Icon(CupertinoIcons.paw,
+                            size: 48, color: CupertinoColors.white),
                       ),
                       const SizedBox(height: 24),
-                      Text(
+                      const Text(
                         'Squirrel',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineLarge
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cs.primary,
-                            ),
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.biliPink,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Bilibili 视频自动监控下载',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: CupertinoColors.secondaryLabel
+                              .resolveFrom(context),
+                        ),
                       ),
                       const SizedBox(height: 48),
 
                       // ── QR Card ──
-                      Card(
-                        elevation: 8,
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            children: [
-                              Text(
-                                '扫码登录',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemBackground
+                              .resolveFrom(context),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: CupertinoColors.systemGrey
+                                  .withOpacity(0.15),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              '扫码登录',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '请使用 Bilibili 手机客户端扫描二维码',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '请使用 Bilibili 手机客户端扫描二维码',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
                               ),
-                              const SizedBox(height: 24),
-                              _buildQRContent(auth),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildQRContent(auth),
+                            const SizedBox(height: 16),
+                            _buildStatusText(auth),
+                            if (kIsWeb) ...[
                               const SizedBox(height: 16),
-                              _buildStatusText(auth),
-                              if (kIsWeb) ...[
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: cs.errorContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.warning_amber,
-                                          color: cs.onErrorContainer),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          '当前运行在 Web 平台，Bilibili API 不支持浏览器跨域请求。\n请使用 Windows 或 Android 运行此应用。',
-                                          style: TextStyle(
-                                            color: cs.onErrorContainer,
-                                            fontSize: 12,
-                                          ),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF3CD),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons
+                                          .exclamationmark_triangle,
+                                      color: Color(0xFF856404),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '当前运行在 Web 平台，Bilibili API 不支持浏览器跨域请求。\n请使用 Windows 或 Android 运行此应用。',
+                                        style: TextStyle(
+                                          color: Color(0xFF856404),
+                                          fontSize: 12,
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     ],
@@ -155,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
         return const SizedBox(
           width: 200,
           height: 200,
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: CupertinoActivityIndicator(radius: 16)),
         );
 
       case AuthState.qrReady:
@@ -173,15 +191,16 @@ class _LoginPageState extends State<LoginPage> {
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: const Color(0xFFFFFFFF).withOpacity(0.9),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle, size: 48, color: Colors.green[400]),
-                    const SizedBox(height: 8),
-                    const Text('已扫码，请在手机上确认'),
+                    Icon(CupertinoIcons.checkmark_circle_fill,
+                        size: 48, color: CupertinoColors.activeGreen),
+                    SizedBox(height: 8),
+                    Text('已扫码，请在手机上确认'),
                   ],
                 ),
               ),
@@ -195,13 +214,20 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  size: 48, color: Theme.of(context).colorScheme.error),
+              const Icon(CupertinoIcons.exclamationmark_circle,
+                  size: 48, color: CupertinoColors.destructiveRed),
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => context.read<AuthService>().generateQRCode(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('重新生成'),
+              CupertinoButton.filled(
+                onPressed: () =>
+                    context.read<AuthService>().generateQRCode(),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(CupertinoIcons.refresh, size: 18),
+                    SizedBox(width: 6),
+                    Text('重新生成'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -211,27 +237,28 @@ class _LoginPageState extends State<LoginPage> {
         return const SizedBox(
           width: 200,
           height: 200,
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: CupertinoActivityIndicator(radius: 16)),
         );
     }
   }
 
   Widget _buildStatusText(AuthService auth) {
-    final cs = Theme.of(context).colorScheme;
-
     switch (auth.state) {
       case AuthState.generatingQr:
         return const Text('正在生成二维码...');
       case AuthState.qrReady:
-        return Text('等待扫码...', style: TextStyle(color: cs.primary));
+        return const Text('等待扫码...',
+            style: TextStyle(color: AppTheme.biliPink));
       case AuthState.scanned:
-        return Text('已扫码，请在手机上确认登录',
-            style: TextStyle(color: Colors.green[700]));
+        return const Text('已扫码，请在手机上确认登录',
+            style: TextStyle(color: CupertinoColors.activeGreen));
       case AuthState.error:
         return Text(auth.errorMessage ?? '发生错误',
-            style: TextStyle(color: cs.error));
+            style:
+                const TextStyle(color: CupertinoColors.destructiveRed));
       case AuthState.loggedIn:
-        return Text('登录成功！', style: TextStyle(color: Colors.green[700]));
+        return const Text('登录成功！',
+            style: TextStyle(color: CupertinoColors.activeGreen));
       default:
         return const SizedBox.shrink();
     }

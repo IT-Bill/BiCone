@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/video_item.dart';
+import '../theme.dart';
 
 class VideoCard extends StatelessWidget {
   final VideoItem video;
@@ -25,285 +26,406 @@ class VideoCard extends StatelessWidget {
   }
 
   Widget _buildCompact(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.systemGrey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {},
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Thumbnail ──
-            if (video.thumbnail.isNotEmpty)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: video.thumbnail,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: cs.surfaceContainerHighest,
-                    child:
-                        const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: cs.surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image, size: 32),
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Thumbnail ──
+          if (video.thumbnail.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: CachedNetworkImage(
+                imageUrl: video.thumbnail,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  child: const Center(
+                      child: CupertinoActivityIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  child: const Icon(CupertinoIcons.photo,
+                      size: 32, color: CupertinoColors.systemGrey),
                 ),
               ),
+            ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ── Title (fixed 2-line height) ──
-                  SizedBox(
-                    height: (Theme.of(context).textTheme.bodySmall?.fontSize ?? 12) * 2.8,
-                    child: Text(
-                      video.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Title (fixed 2-line height) ──
+                SizedBox(
+                  height: 12 * 2.8,
+                  child: Text(
+                    video.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  // ── Author ──
-                  Text(
-                    video.author,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(color: cs.outline),
+                ),
+                const SizedBox(height: 2),
+                // ── Author ──
+                Text(
+                  video.author,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: CupertinoColors.secondaryLabel
+                        .resolveFrom(context),
                   ),
-                  const SizedBox(height: 4),
-                  // ── Time & actions ──
-                  Row(
-                    children: [
-                      if (video.pubDate.isNotEmpty)
-                        Expanded(
-                          child: Text(
-                            _formatDate(video.pubDate),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(color: cs.outline),
+                ),
+                const SizedBox(height: 4),
+                // ── Time & actions ──
+                Row(
+                  children: [
+                    if (video.pubDate.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          _formatDate(video.pubDate),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: CupertinoColors.secondaryLabel
+                                .resolveFrom(context),
                           ),
                         ),
-                      if (video.downloadStatus == DownloadStatus.none ||
-                          video.downloadStatus == DownloadStatus.failed)
-                        InkWell(
-                          onTap: onDownload,
-                          child: Icon(Icons.download,
-                              size: 18, color: cs.primary),
-                        ),
-                      if (video.downloadStatus == DownloadStatus.downloading ||
-                          video.downloadStatus == DownloadStatus.queued)
-                        InkWell(
-                          onTap: onDownload, // reuse: acts as cancel/reset
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              value: video.downloadStatus == DownloadStatus.downloading
-                                  ? video.downloadProgress
-                                  : null,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        ),
-                      if (video.downloadStatus == DownloadStatus.completed) ...[
-                        Icon(Icons.check_circle, size: 16, color: Colors.green[400]),
-                        if (onDelete != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: InkWell(
-                              onTap: onDelete,
-                              child: Icon(Icons.delete_outline,
-                                  size: 18, color: cs.error),
-                            ),
-                          ),
-                      ],
-                      if (video.downloadStatus == DownloadStatus.deleted) ...[
-                        Icon(Icons.block, size: 16, color: cs.outline),
-                        const SizedBox(width: 2),
-                        Text('已忽略',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(color: cs.outline)),
-                        if (onRestore != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: InkWell(
-                              onTap: onRestore,
-                              child: Icon(Icons.restore,
-                                  size: 18, color: cs.primary),
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
+                      ),
+                    ..._buildCompactActions(context),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildCompactActions(BuildContext context) {
+    final List<Widget> actions = [];
+
+    if (video.downloadStatus == DownloadStatus.none ||
+        video.downloadStatus == DownloadStatus.failed) {
+      actions.add(GestureDetector(
+        onTap: onDownload,
+        child: const Icon(CupertinoIcons.arrow_down_circle,
+            size: 20, color: AppTheme.biliPink),
+      ));
+    }
+
+    if (video.downloadStatus == DownloadStatus.downloading ||
+        video.downloadStatus == DownloadStatus.queued) {
+      actions.add(GestureDetector(
+        onTap: onDownload,
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: video.downloadStatus == DownloadStatus.downloading
+              ? _buildMiniProgress(video.downloadProgress)
+              : const CupertinoActivityIndicator(radius: 8),
         ),
+      ));
+    }
+
+    if (video.downloadStatus == DownloadStatus.completed) {
+      actions.add(const Icon(CupertinoIcons.checkmark_circle_fill,
+          size: 16, color: CupertinoColors.activeGreen));
+      if (onDelete != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: GestureDetector(
+            onTap: onDelete,
+            child: const Icon(CupertinoIcons.trash,
+                size: 18, color: CupertinoColors.destructiveRed),
+          ),
+        ));
+      }
+    }
+
+    if (video.downloadStatus == DownloadStatus.deleted) {
+      actions.add(Icon(CupertinoIcons.slash_circle,
+          size: 16,
+          color:
+              CupertinoColors.secondaryLabel.resolveFrom(context)));
+      actions.add(const SizedBox(width: 2));
+      actions.add(Text('已忽略',
+          style: TextStyle(
+            fontSize: 11,
+            color: CupertinoColors.secondaryLabel
+                .resolveFrom(context),
+          )));
+      if (onRestore != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: GestureDetector(
+            onTap: onRestore,
+            child: const Icon(CupertinoIcons.arrow_counterclockwise,
+                size: 18, color: AppTheme.biliPink),
+          ),
+        ));
+      }
+    }
+
+    return actions;
+  }
+
+  Widget _buildMiniProgress(double progress) {
+    return CustomPaint(
+      size: const Size(16, 16),
+      painter: _CircularProgressPainter(
+        progress: progress,
+        color: AppTheme.biliPink,
+        trackColor: CupertinoColors.systemGrey4,
       ),
     );
   }
 
   Widget _buildFull(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.systemGrey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {},
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Thumbnail ──
-            if (video.thumbnail.isNotEmpty)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: video.thumbnail,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: cs.surfaceContainerHighest,
-                    child:
-                        const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: cs.surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image, size: 48),
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Thumbnail ──
+          if (video.thumbnail.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: CachedNetworkImage(
+                imageUrl: video.thumbnail,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  child: const Center(
+                      child: CupertinoActivityIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  child: const Icon(CupertinoIcons.photo,
+                      size: 48, color: CupertinoColors.systemGrey),
                 ),
               ),
+            ),
 
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Title ──
-                  Text(
-                    video.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Title ──
+                Text(
+                  video.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 8),
+                ),
+                const SizedBox(height: 8),
 
-                  // ── Author & date ──
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, size: 16, color: cs.outline),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          video.author,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: cs.outline),
+                // ── Author & date ──
+                Row(
+                  children: [
+                    Icon(CupertinoIcons.person,
+                        size: 14,
+                        color: CupertinoColors.secondaryLabel
+                            .resolveFrom(context)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        video.author,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.secondaryLabel
+                              .resolveFrom(context),
                         ),
                       ),
-                      if (video.pubDate.isNotEmpty)
-                        Text(
-                          _formatDate(video.pubDate),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: cs.outline),
+                    ),
+                    if (video.pubDate.isNotEmpty)
+                      Text(
+                        _formatDate(video.pubDate),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.secondaryLabel
+                              .resolveFrom(context),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
 
-                  // ── Actions ──
-                  Row(
-                    children: [
-                      _buildStatusChip(context),
-                      const Spacer(),
-                      if (video.downloadStatus == DownloadStatus.none ||
-                          video.downloadStatus == DownloadStatus.failed)
-                        FilledButton.icon(
-                          onPressed: onDownload,
-                          icon: const Icon(Icons.download, size: 18),
-                          label: const Text('下载'),
-                        ),
-                      if (video.downloadStatus == DownloadStatus.downloading)
-                        Chip(
-                          avatar: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              value: video.downloadProgress,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          label: Text(
-                              '${(video.downloadProgress * 100).toStringAsFixed(0)}%'),
-                        ),
-                      if (video.downloadStatus == DownloadStatus.completed) ...[
-                        const Chip(
-                          avatar: Icon(Icons.check_circle,
-                              size: 18, color: Colors.green),
-                          label: Text('已下载'),
-                        ),
-                        if (onDelete != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: IconButton(
-                              icon: Icon(Icons.delete_outline,
-                                  color: cs.error),
-                              onPressed: onDelete,
-                              tooltip: '删除',
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
+                // ── Actions ──
+                Row(
+                  children: [
+                    _buildStatusTag(context),
+                    const Spacer(),
+                    ..._buildFullActions(context),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatusChip(BuildContext context) {
+  Widget _buildStatusTag(BuildContext context) {
     if (video.downloadStatus == DownloadStatus.queued) {
-      return const Chip(
-        avatar: Icon(Icons.schedule, size: 16),
-        label: Text('排队中'),
-        visualDensity: VisualDensity.compact,
-      );
+      return _tag(context, CupertinoIcons.clock, '排队中',
+          CupertinoColors.systemGrey);
     }
     if (video.downloadStatus == DownloadStatus.failed) {
-      return Chip(
-        avatar: Icon(Icons.error, size: 16,
-            color: Theme.of(context).colorScheme.error),
-        label: const Text('失败'),
-        visualDensity: VisualDensity.compact,
-      );
+      return _tag(context, CupertinoIcons.exclamationmark_circle,
+          '失败', CupertinoColors.destructiveRed);
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _tag(
+      BuildContext context, IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 12, color: color)),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildFullActions(BuildContext context) {
+    final List<Widget> actions = [];
+
+    if (video.downloadStatus == DownloadStatus.none ||
+        video.downloadStatus == DownloadStatus.failed) {
+      actions.add(CupertinoButton(
+        padding: EdgeInsets.zero,
+        minSize: 32,
+        onPressed: onDownload,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.biliPink,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.arrow_down_circle,
+                  size: 16, color: CupertinoColors.white),
+              SizedBox(width: 4),
+              Text('下载',
+                  style: TextStyle(
+                      fontSize: 13, color: CupertinoColors.white)),
+            ],
+          ),
+        ),
+      ));
+    }
+
+    if (video.downloadStatus == DownloadStatus.downloading) {
+      actions.add(Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemGrey5.resolveFrom(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: _buildMiniProgress(video.downloadProgress),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '${(video.downloadProgress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    if (video.downloadStatus == DownloadStatus.completed) {
+      actions.add(Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: CupertinoColors.activeGreen.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(CupertinoIcons.checkmark_circle_fill,
+                size: 14, color: CupertinoColors.activeGreen),
+            SizedBox(width: 4),
+            Text('已下载',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.activeGreen)),
+          ],
+        ),
+      ));
+      if (onDelete != null) {
+        actions.add(Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minSize: 28,
+            onPressed: onDelete,
+            child: const Icon(CupertinoIcons.trash,
+                size: 20, color: CupertinoColors.destructiveRed),
+          ),
+        ));
+      }
+    }
+
+    return actions;
   }
 
   String _formatDate(String dateStr) {
@@ -333,4 +455,46 @@ class VideoCard extends StatelessWidget {
     }
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
+}
+
+/// A tiny circular progress indicator painted with CustomPaint,
+/// avoiding the need for Material's CircularProgressIndicator.
+class _CircularProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+
+  _CircularProgressPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 1.5;
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.14159 / 2,
+      progress * 2 * 3.14159,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircularProgressPainter old) =>
+      old.progress != progress;
 }

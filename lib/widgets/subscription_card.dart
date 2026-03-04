@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/subscription.dart';
 
@@ -14,44 +14,109 @@ class SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundImage: subscription.face.isNotEmpty
-              ? CachedNetworkImageProvider(subscription.face)
-              : null,
-          child: subscription.face.isEmpty
-              ? const Icon(Icons.person, size: 28)
-              : null,
-        ),
-        title: Text(
-          subscription.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('UID: ${subscription.mid}'),
-            if (subscription.sign.isNotEmpty)
-              Text(
-                subscription.sign,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.outline,
-                  fontSize: 12,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.systemGrey.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // ── Avatar ──
+          ClipOval(
+            child: subscription.face.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: subscription.face,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      width: 48,
+                      height: 48,
+                      color: CupertinoColors.systemGrey5
+                          .resolveFrom(context),
+                      child: const Icon(CupertinoIcons.person_fill,
+                          size: 24, color: CupertinoColors.systemGrey),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      width: 48,
+                      height: 48,
+                      color: CupertinoColors.systemGrey5
+                          .resolveFrom(context),
+                      child: const Icon(CupertinoIcons.person_fill,
+                          size: 24, color: CupertinoColors.systemGrey),
+                    ),
+                  )
+                : Container(
+                    width: 48,
+                    height: 48,
+                    color: CupertinoColors.systemGrey5
+                        .resolveFrom(context),
+                    child: const Icon(CupertinoIcons.person_fill,
+                        size: 24, color: CupertinoColors.systemGrey),
+                  ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── Info ──
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscription.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'UID: ${subscription.mid}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: CupertinoColors.secondaryLabel
+                        .resolveFrom(context),
+                  ),
+                ),
+                if (subscription.sign.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subscription.sign,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.tertiaryLabel
+                          .resolveFrom(context),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // ── Delete ──
+          if (onDelete != null)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minSize: 32,
+              onPressed: onDelete,
+              child: const Icon(
+                CupertinoIcons.trash,
+                size: 20,
+                color: CupertinoColors.destructiveRed,
               ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline,
-              color: Theme.of(context).colorScheme.error),
-          onPressed: onDelete,
-        ),
+            ),
+        ],
       ),
     );
   }
