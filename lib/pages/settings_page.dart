@@ -129,8 +129,8 @@ class SettingsPage extends StatelessWidget {
                   children: [
                     const CupertinoListTile(
                       leading: Icon(CupertinoIcons.paw),
-                      title: Text('Squirrel'),
-                      additionalInfo: Text('0.2.4'),
+                      title: Text('BiCone'),
+                      additionalInfo: Text('0.2.5'),
                     ),
                   ],
                 ),

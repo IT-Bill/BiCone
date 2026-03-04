@@ -1,4 +1,4 @@
-# squirrel
+# BiCone
 
 A new Flutter project.
 

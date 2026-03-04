@@ -38,7 +38,7 @@ void main() async {
         ChangeNotifierProvider.value(value: download),
         ChangeNotifierProvider.value(value: monitor),
       ],
-      child: const SquirrelApp(),
+      child: const BiConeApp(),
     ),
   );
 }

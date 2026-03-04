@@ -69,7 +69,7 @@ IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 #if defined(FLUTTER_VERSION)
 #define VERSION_AS_STRING FLUTTER_VERSION
 #else
-#define VERSION_AS_STRING "0.2.4"
+#define VERSION_AS_STRING "0.2.5"
 #endif
 
 VS_VERSION_INFO VERSIONINFO
@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "cn.itbill" "\0"
-            VALUE "FileDescription", "squirrel" "\0"
+            VALUE "FileDescription", "BiCone" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "squirrel" "\0"
+            VALUE "InternalName", "bicone" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 cn.itbill. All rights reserved." "\0"
-            VALUE "OriginalFilename", "squirrel.exe" "\0"
-            VALUE "ProductName", "squirrel" "\0"
+            VALUE "OriginalFilename", "bicone.exe" "\0"
+            VALUE "ProductName", "BiCone" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

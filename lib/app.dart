@@ -5,13 +5,13 @@ import 'services/auth_service.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 
-class SquirrelApp extends StatelessWidget {
-  const SquirrelApp({super.key});
+class BiConeApp extends StatelessWidget {
+  const BiConeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return CupertinoApp(
-      title: 'Squirrel',
+      title: 'BiCone',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: Consumer<AuthService>(

@@ -1,6 +1,6 @@
 {
-    "name": "squirrel",
-    "short_name": "squirrel",
+    "name": "BiCone",
+    "short_name": "BiCone",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

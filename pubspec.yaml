@@ -1,8 +1,8 @@
-name: squirrel
+name: bicone
 description: "Bilibili video monitor and auto-downloader"
 publish_to: 'none'
 
-version: 0.2.4+1
+version: 0.2.5+1
 
 environment:
   sdk: ^3.11.1

@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 24),
                       const Text(
-                        'Squirrel',
+                        'BiCone',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
