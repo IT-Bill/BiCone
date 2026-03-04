@@ -39,43 +39,55 @@ class AuthService extends ChangeNotifier {
 
   /// Try to restore a previous login session from storage.
   Future<void> tryRestoreLogin() async {
-    if (_storage.isLoggedIn) {
-      try {
-        // Verify session is still valid
-        final response = await _dio.get(
-          'https://api.bilibili.com/x/member/my',
-          options:
-              Options(headers: {'Cookie': 'SESSDATA=${_storage.sessdata}'}),
-        );
-        if (response.data['code'] == 0) {
-          // Refresh user info via public API (no auth needed)
-          final uid = _storage.userId ?? '${response.data['data']['mid']}';
-          try {
-            final cardResp = await _dio.get(
-              'https://api.bilibili.com/x/web-interface/card',
-              queryParameters: {'mid': uid, 'photo': false},
-            );
-            if (cardResp.data['code'] == 0) {
-              final card = cardResp.data['data']['card'];
-              await _storage.saveAuth(
-                sessdata: _storage.sessdata!,
-                biliJct: _storage.biliJct ?? '',
-                userId: uid,
-                refreshToken: _storage.refreshToken ?? '',
-                userName: card['name'],
-                userFace: card['face'],
-              );
-            }
-          } catch (_) {}
-          _state = AuthState.loggedIn;
-          notifyListeners();
-          return;
-        }
-      } catch (_) {}
-      await _storage.clearAuth();
+    if (!_storage.isLoggedIn) {
+      _state = AuthState.notLoggedIn;
+      notifyListeners();
+      return;
     }
-    _state = AuthState.notLoggedIn;
-    notifyListeners();
+
+    try {
+      // Verify session is still valid
+      final response = await _dio.get(
+        'https://api.bilibili.com/x/member/my',
+        options:
+            Options(headers: {'Cookie': 'SESSDATA=${_storage.sessdata}'}),
+      );
+      if (response.data['code'] == 0) {
+        // Session valid – refresh user info via public API
+        final uid = _storage.userId ?? '${response.data['data']['mid']}';
+        try {
+          final cardResp = await _dio.get(
+            'https://api.bilibili.com/x/web-interface/card',
+            queryParameters: {'mid': uid, 'photo': false},
+          );
+          if (cardResp.data['code'] == 0) {
+            final card = cardResp.data['data']['card'];
+            await _storage.saveAuth(
+              sessdata: _storage.sessdata!,
+              biliJct: _storage.biliJct ?? '',
+              userId: uid,
+              refreshToken: _storage.refreshToken ?? '',
+              userName: card['name'],
+              userFace: card['face'],
+            );
+          }
+        } catch (_) {}
+        _state = AuthState.loggedIn;
+        notifyListeners();
+        return;
+      }
+
+      // Server explicitly rejected the session – clear credentials
+      await _storage.clearAuth();
+      _state = AuthState.notLoggedIn;
+      notifyListeners();
+    } catch (_) {
+      // Network error / timeout – keep stored credentials and treat as
+      // logged-in so the user is not forced to re-login due to a
+      // transient network issue.
+      _state = AuthState.loggedIn;
+      notifyListeners();
+    }
   }
 
   /// Request a new QR code for login.
