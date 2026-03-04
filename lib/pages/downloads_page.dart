@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/video_item.dart';
 import '../services/download_service.dart';
@@ -240,16 +238,11 @@ class _CompletedDownloads extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 15),
                 ),
-                subtitle: Text(video.author),
-                trailing: video.localPath != null
-                    ? CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () =>
-                            _showFileInfo(context, video),
-                        child: const Icon(
-                            CupertinoIcons.folder, size: 20),
-                      )
-                    : null,
+                subtitle: Text(
+                  '${video.author}  ${_formatDownloadedAt(video.downloadedAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             );
           },
@@ -258,45 +251,17 @@ class _CompletedDownloads extends StatelessWidget {
     );
   }
 
-  void _showFileInfo(BuildContext context, VideoItem video) {
-    final file = File(video.localPath!);
-    if (!file.existsSync()) return;
-
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('文件位置'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            video.localPath!,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () {
-              Clipboard.setData(
-                  ClipboardData(text: video.localPath!));
-              Navigator.pop(ctx);
-            },
-            child: const Text('复制路径'),
-          ),
-          CupertinoDialogAction(
-            onPressed: () {
-              final dir = file.parent.path;
-              Clipboard.setData(ClipboardData(text: dir));
-              Navigator.pop(ctx);
-            },
-            child: const Text('复制目录'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
-    );
+  String _formatDownloadedAt(String? downloadedAt) {
+    if (downloadedAt == null || downloadedAt.isEmpty) return '';
+    try {
+      final date = DateTime.parse(downloadedAt).toUtc().add(const Duration(hours: 8));
+      final now = DateTime.now().toUtc().add(const Duration(hours: 8));
+      if (date.year == now.year) {
+        return '下载于 ${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      }
+      return '下载于 ${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
   }
 }

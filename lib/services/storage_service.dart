@@ -123,6 +123,9 @@ class StorageService extends ChangeNotifier {
       map['downloadStatus'] = status.index;
       if (progress != null) map['downloadProgress'] = progress;
       if (localPath != null) map['localPath'] = localPath;
+      if (status == DownloadStatus.completed) {
+        map['downloadedAt'] = DateTime.now().toUtc().toIso8601String();
+      }
       await _videosBox.put(bvid, map);
       _loadVideos();
       notifyListeners();

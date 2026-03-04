@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import '../models/video_item.dart';
 import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
@@ -317,6 +318,10 @@ class _VideoGrid extends StatelessWidget {
                     if (!await onBeforeDownload()) return;
                     dl.addDownload(video);
                   },
+                  onPlay: video.downloadStatus == DownloadStatus.completed &&
+                          video.localPath != null
+                      ? () => OpenFilex.open(video.localPath!)
+                      : null,
                   onDelete: video.downloadStatus == DownloadStatus.completed
                       ? () => _confirmDelete(context, video)
                       : null,

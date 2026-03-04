@@ -9,6 +9,7 @@ class VideoCard extends StatelessWidget {
   final VoidCallback? onDownload;
   final VoidCallback? onDelete;
   final VoidCallback? onRestore;
+  final VoidCallback? onPlay;
   final bool compact;
 
   const VideoCard({
@@ -17,6 +18,7 @@ class VideoCard extends StatelessWidget {
     this.onDownload,
     this.onDelete,
     this.onRestore,
+    this.onPlay,
     this.compact = false,
   });
 
@@ -148,6 +150,14 @@ class VideoCard extends StatelessWidget {
     }
 
     if (video.downloadStatus == DownloadStatus.completed) {
+      if (onPlay != null) {
+        actions.add(GestureDetector(
+          onTap: onPlay,
+          child: const Icon(CupertinoIcons.play_circle,
+              size: 18, color: AppTheme.biliPink),
+        ));
+        actions.add(const SizedBox(width: 4));
+      }
       actions.add(const Icon(CupertinoIcons.checkmark_circle_fill,
           size: 16, color: CupertinoColors.activeGreen));
       if (onDelete != null) {
@@ -391,6 +401,34 @@ class VideoCard extends StatelessWidget {
     }
 
     if (video.downloadStatus == DownloadStatus.completed) {
+      if (onPlay != null) {
+        actions.add(CupertinoButton(
+          padding: EdgeInsets.zero,
+          minSize: 28,
+          onPressed: onPlay,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.biliPink.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(CupertinoIcons.play_circle,
+                    size: 14, color: AppTheme.biliPink),
+                SizedBox(width: 4),
+                Text('播放',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.biliPink)),
+              ],
+            ),
+          ),
+        ));
+        actions.add(const SizedBox(width: 4));
+      }
       actions.add(Container(
         padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

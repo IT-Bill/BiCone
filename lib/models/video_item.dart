@@ -12,6 +12,7 @@ class VideoItem {
   DownloadStatus downloadStatus;
   double downloadProgress;
   String? localPath;
+  String? downloadedAt;
 
   VideoItem({
     required this.bvid,
@@ -25,6 +26,7 @@ class VideoItem {
     this.downloadStatus = DownloadStatus.none,
     this.downloadProgress = 0.0,
     this.localPath,
+    this.downloadedAt,
   });
 
   factory VideoItem.fromJson(Map<String, dynamic> json) {
@@ -40,6 +42,7 @@ class VideoItem {
       downloadStatus: DownloadStatus.values[json['downloadStatus'] ?? 0],
       downloadProgress: (json['downloadProgress'] ?? 0.0).toDouble(),
       localPath: json['localPath'],
+      downloadedAt: json['downloadedAt'],
     );
   }
 
@@ -55,5 +58,6 @@ class VideoItem {
         'downloadStatus': downloadStatus.index,
         'downloadProgress': downloadProgress,
         'localPath': localPath,
+        'downloadedAt': downloadedAt,
       };
 }
