@@ -15,6 +15,7 @@ class SubscriptionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
+        transitionBetweenRoutes: false,
         middle: const Text('我的订阅'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,

@@ -18,6 +18,7 @@ class _DownloadsPageState extends State<DownloadsPage> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
+        transitionBetweenRoutes: false,
         middle: Text('下载管理'),
       ),
       child: SafeArea(

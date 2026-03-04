@@ -184,6 +184,7 @@ class _FeedPageState extends State<FeedPage> {
 
         return CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(
+            transitionBetweenRoutes: false,
             padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
