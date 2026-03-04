@@ -124,7 +124,7 @@ class SettingsPage extends StatelessWidget {
                     const ListTile(
                       leading: Icon(Icons.pets),
                       title: Text('Squirrel'),
-                      subtitle: Text('版本 1.0.0'),
+                      subtitle: Text('版本 0.1.0'),
                     ),
 
                   ],
