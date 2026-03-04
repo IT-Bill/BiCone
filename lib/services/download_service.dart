@@ -330,4 +330,36 @@ class DownloadService extends ChangeNotifier {
     _tasks.removeWhere((t) => t.status == DownloadStatus.completed);
     notifyListeners();
   }
+
+  /// Cancel active downloads and delete local files for all videos by a given UP主.
+  Future<void> cancelAndDeleteByAuthor(List<VideoItem> videos) async {
+    for (final video in videos) {
+      // Cancel any active download
+      final task = _tasks.cast<DownloadTask?>().firstWhere(
+            (t) => t!.video.bvid == video.bvid,
+            orElse: () => null,
+          );
+      if (task != null) {
+        task.cancelToken?.cancel();
+        _tasks.remove(task);
+      }
+
+      // Delete local file if it exists
+      if (video.localPath != null && video.localPath!.isNotEmpty) {
+        try {
+          final file = File(video.localPath!);
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint('Deleted file: ${file.path}');
+          }
+        } catch (e) {
+          debugPrint('Error deleting file for ${video.bvid}: $e');
+        }
+      }
+
+      // Also clean partial file
+      await _cleanPartialFile(video.bvid);
+    }
+    notifyListeners();
+  }
 }

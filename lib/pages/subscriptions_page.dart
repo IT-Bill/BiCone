@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
+import '../services/monitor_service.dart';
+import '../services/download_service.dart';
 import '../widgets/subscription_card.dart';
 
 class SubscriptionsPage extends StatelessWidget {
@@ -78,6 +81,51 @@ class SubscriptionsPage extends StatelessWidget {
   }
 
   void _showAddDialog(BuildContext context) {
+    final storage = context.read<StorageService>();
+
+    // Check if download path is set; if not, prompt user to set it first
+    if (storage.downloadPath.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder: (dialogCtx) {
+          return CupertinoAlertDialog(
+            title: const Text('未设置下载路径'),
+            content: const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: Text('添加订阅前需要先设置视频下载路径。\n推荐在 Download 目录下创建新文件夹。'),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('取消'),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  final result = await FilePicker.platform.getDirectoryPath(
+                    dialogTitle: '选择下载路径',
+                  );
+                  if (result != null) {
+                    storage.setDownloadPath(result);
+                    if (context.mounted) {
+                      _showAddUPDialog(context);
+                    }
+                  }
+                },
+                child: const Text('去设置'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    _showAddUPDialog(context);
+  }
+
+  void _showAddUPDialog(BuildContext context) {
     final controller = TextEditingController();
     bool isLoading = false;
     String? errorText;
@@ -175,6 +223,10 @@ class SubscriptionsPage extends StatelessWidget {
                               sign: info['sign'] ?? '',
                             );
                             await storage.addSubscription(sub);
+                            // Immediately refresh videos for the new subscription
+                            if (context.mounted) {
+                              context.read<MonitorService>().checkForNewVideos();
+                            }
                             if (dialogCtx.mounted) {
                               Navigator.pop(dialogCtx);
                             }
@@ -197,25 +249,44 @@ class SubscriptionsPage extends StatelessWidget {
 
   void _confirmDelete(
       BuildContext context, StorageService storage, Subscription sub) {
-    showCupertinoDialog(
+    showCupertinoModalPopup(
       context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('取消订阅'),
-        content: Text('确定要取消订阅 ${sub.name} 吗？'),
+      builder: (ctx) => CupertinoActionSheet(
+        title: Text('取消订阅 ${sub.name}'),
+        message: const Text('请选择取消订阅后的处理方式'),
         actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
+          CupertinoActionSheetAction(
             onPressed: () {
               storage.removeSubscription(sub.mid);
               Navigator.pop(ctx);
             },
-            child: const Text('确定'),
+            child: const Text('仅取消订阅'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              await storage.removeVideosByAuthor(sub.mid);
+              await storage.removeSubscription(sub.mid);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('取消订阅并清除动态'),
+          ),
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              final download = context.read<DownloadService>();
+              final removedVideos =
+                  await storage.removeVideosByAuthor(sub.mid);
+              await download.cancelAndDeleteByAuthor(removedVideos);
+              await storage.removeSubscription(sub.mid);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('取消订阅并删除所有'),
           ),
         ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
       ),
     );
   }

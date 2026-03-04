@@ -88,6 +88,19 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Remove all video records for a given UP主 (by mid).
+  /// Returns the list of removed videos for potential file cleanup.
+  Future<List<VideoItem>> removeVideosByAuthor(int mid) async {
+    final toRemove =
+        _videos.where((v) => v.authorMid == mid).toList();
+    for (final video in toRemove) {
+      await _videosBox.delete(video.bvid);
+    }
+    _loadVideos();
+    notifyListeners();
+    return toRemove;
+  }
+
   bool isSubscribed(int mid) {
     return _subscriptions.any((s) => s.mid == mid);
   }
