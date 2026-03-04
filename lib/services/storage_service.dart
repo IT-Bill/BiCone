@@ -192,7 +192,7 @@ class StorageService extends ChangeNotifier {
   }
 
   int get checkInterval =>
-      _settingsBox.get('checkInterval', defaultValue: 30);
+      _settingsBox.get('checkInterval', defaultValue: 3);
   Future<void> setCheckInterval(int minutes) async {
     await _settingsBox.put('checkInterval', minutes);
     notifyListeners();
