@@ -1,6 +1,6 @@
 {
-    "name": "hamster",
-    "short_name": "hamster",
+    "name": "squirrel",
+    "short_name": "squirrel",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

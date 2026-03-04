@@ -1,4 +1,4 @@
-# hamster
+# squirrel
 
 A new Flutter project.
 

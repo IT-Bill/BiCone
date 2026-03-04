@@ -5,13 +5,13 @@ import 'services/auth_service.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 
-class HamsterApp extends StatelessWidget {
-  const HamsterApp({super.key});
+class SquirrelApp extends StatelessWidget {
+  const SquirrelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hamster',
+      title: 'Squirrel',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

@@ -35,7 +35,7 @@ void main() async {
         ChangeNotifierProvider.value(value: download),
         ChangeNotifierProvider.value(value: monitor),
       ],
-      child: const HamsterApp(),
+      child: const SquirrelApp(),
     ),
   );
 }

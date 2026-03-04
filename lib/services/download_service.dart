@@ -51,7 +51,7 @@ class DownloadService extends ChangeNotifier {
     if (customPath.isNotEmpty) return customPath;
 
     final dir = await getApplicationDocumentsDirectory();
-    final downloadDir = Directory('${dir.path}/Hamster/Downloads');
+    final downloadDir = Directory('${dir.path}/Squirrel/Downloads');
     if (!await downloadDir.exists()) {
       await downloadDir.create(recursive: true);
     }

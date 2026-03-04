@@ -1,4 +1,4 @@
-package com.example.hamster
+package cn.itbill.squirrel
 
 import io.flutter.embedding.android.FlutterActivity
 

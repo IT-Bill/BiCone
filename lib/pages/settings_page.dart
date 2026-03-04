@@ -123,7 +123,7 @@ class SettingsPage extends StatelessWidget {
                   children: [
                     const ListTile(
                       leading: Icon(Icons.pets),
-                      title: Text('Hamster'),
+                      title: Text('Squirrel'),
                       subtitle: Text('版本 1.0.0'),
                     ),
 
@@ -143,7 +143,7 @@ class SettingsPage extends StatelessWidget {
   Future<String> _getDownloadPath(StorageService storage) async {
     if (storage.downloadPath.isNotEmpty) return storage.downloadPath;
     final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}/Hamster/Downloads';
+    return '${dir.path}/Squirrel/Downloads';
   }
 
   String _qualityName(int qn) {

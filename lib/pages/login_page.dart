@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Hamster',
+                        'Squirrel',
                         style: Theme.of(context)
                             .textTheme
                             .headlineLarge
