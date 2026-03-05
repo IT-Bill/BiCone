@@ -243,4 +243,12 @@ class StorageService extends ChangeNotifier {
     await _settingsBox.put('hideUndownloaded', enabled);
     notifyListeners();
   }
+
+  /// RSS mode: 'dynamic' (default) or 'video'
+  String get rssMode =>
+      _settingsBox.get('rssMode', defaultValue: 'dynamic');
+  Future<void> setRssMode(String mode) async {
+    await _settingsBox.put('rssMode', mode);
+    notifyListeners();
+  }
 }

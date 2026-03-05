@@ -7,8 +7,9 @@ import '../models/video_item.dart';
 class RssService {
   final Dio _dio = Dio();
   final String rssHubUrl;
+  final String rssMode;
 
-  RssService({required this.rssHubUrl});
+  RssService({required this.rssHubUrl, this.rssMode = 'dynamic'});
 
   /// Maximum retries for 503 (cache miss) responses from RSSHub.
   static const int _maxRetries = 2;
@@ -16,8 +17,11 @@ class RssService {
 
   Future<List<VideoItem>> getLatestVideos(int uid, {int retry = 0}) async {
     try {
+      final path = rssMode == 'video'
+          ? '/bilibili/user/video/$uid'
+          : '/bilibili/user/dynamic/$uid/disableEmbed=1';
       final response = await _dio.get(
-        '$rssHubUrl/bilibili/user/video/$uid',
+        '$rssHubUrl$path',
         options: Options(
           responseType: ResponseType.plain,
           receiveTimeout: const Duration(seconds: 15),
@@ -40,17 +44,32 @@ class RssService {
         final description =
             item.findElements('description').firstOrNull?.innerText ?? '';
 
-        // Extract BV ID from link or guid
         String bvid = '';
-        final bvMatchLink = RegExp(r'BV[\w]+').firstMatch(link);
-        if (bvMatchLink != null) {
-          bvid = bvMatchLink.group(0)!;
+        String videoLink = '';
+
+        if (rssMode == 'video') {
+          // Video endpoint: BV ID is in <link> or <guid>
+          final bvMatchLink = RegExp(r'BV[\w]+').firstMatch(link);
+          if (bvMatchLink != null) {
+            bvid = bvMatchLink.group(0)!;
+          } else {
+            final guid =
+                item.findElements('guid').firstOrNull?.innerText ?? '';
+            final bvMatchGuid = RegExp(r'BV[\w]+').firstMatch(guid);
+            bvid = bvMatchGuid?.group(0) ?? '';
+          }
+          videoLink = link.isNotEmpty
+              ? link
+              : 'https://www.bilibili.com/video/$bvid';
         } else {
-          // Fallback: try guid element
-          final guid =
-              item.findElements('guid').firstOrNull?.innerText ?? '';
-          final bvMatchGuid = RegExp(r'BV[\w]+').firstMatch(guid);
-          bvid = bvMatchGuid?.group(0) ?? '';
+          // Dynamic endpoint: filter to video posts only
+          if (!description.contains('视频地址：')) continue;
+          if (description.contains('转发自:')) continue;
+          final bvMatch = RegExp(r'BV[\w]+').firstMatch(description);
+          if (bvMatch != null) {
+            bvid = bvMatch.group(0)!;
+          }
+          videoLink = 'https://www.bilibili.com/video/$bvid';
         }
 
         // Extract thumbnail specifically from <img> tags in description HTML
@@ -73,14 +92,12 @@ class RssService {
             thumbnail: thumbnail,
             pubDate: pubDate,
             description: description,
-            link: link.isNotEmpty
-                ? link
-                : 'https://www.bilibili.com/video/$bvid',
+            link: videoLink,
           ));
         }
       }
 
-      debugPrint('RSS feed for uid=$uid: found ${videos.length} videos');
+      debugPrint('RSS feed for uid=$uid (mode=$rssMode): found ${videos.length} videos');
       return videos;
     } on DioException catch (e) {
       // RSSHub returns 503 when the feed cache is not yet built — retry

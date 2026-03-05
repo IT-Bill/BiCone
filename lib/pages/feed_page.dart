@@ -477,7 +477,7 @@ class _VideoGrid extends StatelessWidget {
 
     // Check video validity via RSSHub
     final storage = context.read<StorageService>();
-    final rssService = RssService(rssHubUrl: storage.rssHubUrl);
+    final rssService = RssService(rssHubUrl: storage.rssHubUrl, rssMode: storage.rssMode);
     final exists = await rssService.checkVideoExists(video.authorMid, video.bvid);
 
     if (!context.mounted) return;

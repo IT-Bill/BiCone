@@ -63,7 +63,7 @@ class MonitorService extends ChangeNotifier {
     _newVideoCount = 0;
     notifyListeners();
 
-    final rssService = RssService(rssHubUrl: _storage.rssHubUrl);
+    final rssService = RssService(rssHubUrl: _storage.rssHubUrl, rssMode: _storage.rssMode);
     final subscriptions = _storage.subscriptions;
 
     for (final sub in subscriptions) {

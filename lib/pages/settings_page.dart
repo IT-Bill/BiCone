@@ -79,6 +79,16 @@ class SettingsPage extends StatelessWidget {
                           _showRssHubUrlEditor(context, storage),
                     ),
                     CupertinoListTile(
+                      title: const Text('获取方式'),
+                      additionalInfo: Text(
+                        storage.rssMode == 'video' ? '视频接口' : '动态接口',
+                      ),
+                      trailing:
+                          const CupertinoListTileChevron(),
+                      onTap: () =>
+                          _showRssModePicker(context, storage),
+                    ),
+                    CupertinoListTile(
                       title: const Text('自动下载'),
                       subtitle: const Text(
                         '仅自动下载订阅后发布的新视频',
@@ -334,5 +344,54 @@ class SettingsPage extends StatelessWidget {
     if (result != null) {
       storage.setDownloadPath(result);
     }
+  }
+
+  void _showRssModePicker(BuildContext context, StorageService storage) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: const Text('获取方式'),
+        message: const Text(
+          '动态接口：获取的历史视频较少（UP经常发动态时），但风控较少，成功率更高\n'
+          '视频接口：获取的历史视频较多，但更可能触发风控导致获取失败\n'
+          '两者获取最新视频的实时性一致（约1分钟延迟）',
+        ),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              storage.setRssMode('dynamic');
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              '动态接口（推荐）',
+              style: TextStyle(
+                fontWeight: storage.rssMode == 'dynamic'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              storage.setRssMode('video');
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              '视频接口',
+              style: TextStyle(
+                fontWeight: storage.rssMode == 'video'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+      ),
+    );
   }
 }
