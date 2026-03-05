@@ -18,9 +18,9 @@ void main() async {
   // Wire up services
   final auth = AuthService(storage);
   final api = ApiService(storage);
-  final download = DownloadService(api, storage);
   final notification = NotificationService();
   await notification.init();
+  final download = DownloadService(api, storage, notification);
   final monitor = MonitorService(storage, download, notification);
 
   // Clean up any downloads that were interrupted by app exit

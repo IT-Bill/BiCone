@@ -2,7 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// Manages local push notifications for new-video alerts.
+/// Manages local push notifications for new-video alerts and download progress.
 class NotificationService {
   static final NotificationService _instance = NotificationService._();
   factory NotificationService() => _instance;
@@ -12,6 +12,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+
+  /// Stable notification ID for the download progress notification.
+  static const int _downloadProgressId = 9999;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -63,5 +66,70 @@ class NotificationService {
       body: body,
       notificationDetails: details,
     );
+  }
+
+  /// Show or update the download progress notification.
+  Future<void> showDownloadProgressNotification({
+    required String title,
+    required int progress,
+    required String status,
+  }) async {
+    if (!_initialized) return;
+
+    final androidDetails = AndroidNotificationDetails(
+      'download_channel',
+      '下载进度',
+      channelDescription: '显示视频下载进度',
+      importance: Importance.low,
+      priority: Priority.low,
+      onlyAlertOnce: true,
+      ongoing: true,
+      autoCancel: false,
+      showProgress: true,
+      maxProgress: 100,
+      progress: progress,
+    );
+
+    final details = NotificationDetails(android: androidDetails);
+
+    await _plugin.show(
+      id: _downloadProgressId,
+      title: '正在下载: $title',
+      body: status,
+      notificationDetails: details,
+    );
+  }
+
+  /// Show a download completed notification (replaces the progress one).
+  Future<void> showDownloadCompleteNotification({
+    required String title,
+  }) async {
+    if (!_initialized) return;
+
+    // Cancel the progress notification first
+    await _plugin.cancel(id: _downloadProgressId);
+
+    const androidDetails = AndroidNotificationDetails(
+      'download_channel',
+      '下载进度',
+      channelDescription: '显示视频下载进度',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    );
+
+    const details = NotificationDetails(android: androidDetails);
+
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: '下载完成',
+      body: title,
+      notificationDetails: details,
+    );
+  }
+
+  /// Cancel the download progress notification (e.g., when download is cancelled).
+  Future<void> cancelDownloadNotification() async {
+    if (!_initialized) return;
+    await _plugin.cancel(id: _downloadProgressId);
   }
 }

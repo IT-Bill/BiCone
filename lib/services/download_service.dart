@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../models/video_item.dart';
 import 'api_service.dart';
+import 'notification_service.dart';
 import 'storage_service.dart';
 
 class DownloadTask {
@@ -88,6 +89,7 @@ class DownloadTask {
 class DownloadService extends ChangeNotifier {
   final ApiService _apiService;
   final StorageService _storage;
+  final NotificationService _notificationService;
   final Dio _dio = Dio();
 
   final List<DownloadTask> _tasks = [];
@@ -115,7 +117,7 @@ class DownloadService extends ChangeNotifier {
   List<DownloadTask> get completedTasks =>
       _tasks.where((t) => t.status == DownloadStatus.completed).toList();
 
-  DownloadService(this._apiService, this._storage) {
+  DownloadService(this._apiService, this._storage, this._notificationService) {
     _dio.options.headers['User-Agent'] =
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
         '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -213,6 +215,14 @@ class DownloadService extends ChangeNotifier {
               DownloadStatus.downloading,
               progress: task.progress,
             );
+            // Update notification progress (throttled by speed update interval)
+            if (task.speed > 0) {
+              _notificationService.showDownloadProgressNotification(
+                title: task.video.title,
+                progress: (task.progress * 100).round(),
+                status: '${task.formattedSize}  ${task.formattedSpeed}',
+              );
+            }
             notifyListeners();
           }
         },
@@ -234,6 +244,11 @@ class DownloadService extends ChangeNotifier {
         progress: 1.0,
         localPath: savePath,
         fileSize: fileSize,
+      );
+
+      // Show download complete notification
+      await _notificationService.showDownloadCompleteNotification(
+        title: task.video.title,
       );
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) {
@@ -287,6 +302,8 @@ class DownloadService extends ChangeNotifier {
     await _storage.updateVideoStatus(bvid, DownloadStatus.none, progress: 0.0);
     // Clean up partial file on disk
     await _cleanPartialFile(bvid);
+    // Cancel download progress notification
+    await _notificationService.cancelDownloadNotification();
     notifyListeners();
   }
 
