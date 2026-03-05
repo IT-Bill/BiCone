@@ -1,3 +1,5 @@
+#define MySourceDir "..\..\build\windows\x64\runner\Release"
+
 [Setup]
 AppName=BiCone
 AppVersion={#MyAppVersion}
@@ -15,7 +17,7 @@ UninstallDisplayIcon={app}\bicone.exe
 WizardStyle=modern
 
 [Files]
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+Source: "{#MySourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\BiCone"; Filename: "{app}\bicone.exe"
