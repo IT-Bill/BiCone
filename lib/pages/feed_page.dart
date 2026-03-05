@@ -42,8 +42,9 @@ class _FeedPageState extends State<FeedPage> {
   }
 
   void _onDownloadChanged() {
+    if (!mounted) return;
     final dl = context.read<DownloadService>();
-    if (dl.lastError != null && mounted) {
+    if (dl.lastError != null) {
       final error = dl.lastError!;
       final errorBvid = dl.lastErrorBvid;
       dl.clearLastError();

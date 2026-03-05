@@ -10,6 +10,7 @@ class ApiService {
 
   String? _imgKey;
   String? _subKey;
+  DateTime? _wbiKeysFetchedAt;
 
   // WBI mixin-key encoding table
   static const List<int> _mixinKeyEncTab = [
@@ -46,16 +47,23 @@ class ApiService {
   }
 
   Future<void> _ensureWbiKeys() async {
-    if (_imgKey != null && _subKey != null) return;
+    // Refresh if keys are missing or older than 12 hours (daily rotation)
+    final needsRefresh = _imgKey == null ||
+        _subKey == null ||
+        _wbiKeysFetchedAt == null ||
+        DateTime.now().difference(_wbiKeysFetchedAt!).inHours >= 12;
+    if (!needsRefresh) return;
     try {
       final resp = await _dio.get(
         'https://api.bilibili.com/x/web-interface/nav',
         options: _authOptions,
       );
-      if (resp.data['code'] == 0) {
-        final wbi = resp.data['data']['wbi_img'];
+      // wbi_img is returned even when not logged in (code == -101)
+      final wbi = resp.data['data']?['wbi_img'];
+      if (wbi != null) {
         _imgKey = (wbi['img_url'] as String).split('/').last.split('.').first;
         _subKey = (wbi['sub_url'] as String).split('/').last.split('.').first;
+        _wbiKeysFetchedAt = DateTime.now();
       }
     } catch (_) {}
   }
