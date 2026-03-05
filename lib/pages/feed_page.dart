@@ -165,6 +165,14 @@ class _FeedPageState extends State<FeedPage> {
               .toList();
         }
 
+        // Hide undownloaded videos if the setting is enabled
+        if (storage.hideUndownloaded) {
+          allVideos = allVideos
+              .where((v) =>
+                  v.downloadStatus == DownloadStatus.completed)
+              .toList();
+        }
+
         // Build unique UP主 list
         final upMap = <int, String>{};
         for (final v in storage.videos) {
@@ -285,6 +293,18 @@ class _FeedPageState extends State<FeedPage> {
               Navigator.pop(ctx);
             },
             child: Text(_showInvalidated ? '隐藏已失效视频' : '显示已失效视频'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              final storage = context.read<StorageService>();
+              storage.setHideUndownloaded(!storage.hideUndownloaded);
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              context.read<StorageService>().hideUndownloaded
+                  ? '显示未下载视频'
+                  : '隐藏未下载视频',
+            ),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(

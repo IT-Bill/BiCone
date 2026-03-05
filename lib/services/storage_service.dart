@@ -236,4 +236,11 @@ class StorageService extends ChangeNotifier {
     await _settingsBox.put('autoDownload', enabled);
     notifyListeners();
   }
+
+  bool get hideUndownloaded =>
+      _settingsBox.get('hideUndownloaded', defaultValue: false);
+  Future<void> setHideUndownloaded(bool enabled) async {
+    await _settingsBox.put('hideUndownloaded', enabled);
+    notifyListeners();
+  }
 }
