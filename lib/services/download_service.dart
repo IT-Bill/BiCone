@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
 import 'package:flutter/foundation.dart';
 import '../models/video_item.dart';
 import 'api_service.dart';
@@ -188,94 +190,67 @@ class DownloadService extends ChangeNotifier {
       final cid = videoInfo['cid'] ?? videoInfo['pages']?[0]?['cid'];
       if (cid == null) throw Exception('获取视频CID失败');
 
-      // 2. Get stream URL
-      debugPrint('Download: fetching stream URL for ${task.video.bvid}, cid=$cid');
-      final downloadUrl = await _apiService.getVideoDownloadUrl(
+      // 2. Get DASH streams (video + audio)
+      debugPrint('Download: fetching DASH streams for ${task.video.bvid}, cid=$cid');
+      final streams = await _apiService.getVideoDashStreams(
         task.video.bvid,
         cid,
         qn: _storage.videoQuality,
       );
-      if (downloadUrl == null) throw Exception('获取下载地址失败');
+      if (streams == null) throw Exception('获取下载地址失败');
 
-      // 3. Download
+      // 3. Prepare paths
       final dir = await _downloadDir;
       debugPrint('Download: saving to $dir');
       final sanitized =
           task.video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final savePath = '$dir/$sanitized.flv';
+      final videoPath = '$dir/$sanitized.video.m4s';
+      final audioPath = '$dir/$sanitized.audio.m4s';
+      final outputPath = '$dir/$sanitized.mp4';
 
-      // Check for existing partial file to support resume
-      int resumeFromBytes = 0;
-      final partialFile = File(savePath);
-      if (await partialFile.exists()) {
-        resumeFromBytes = await partialFile.length();
-      }
+      // 4. Download video stream (progress 0% ~ 85%)
+      await _downloadStream(
+        url: streams.videoUrl,
+        savePath: videoPath,
+        task: task,
+        progressOffset: 0.0,
+        progressScale: 0.85,
+      );
 
-      if (resumeFromBytes > 0) {
-        // Resume download with Range header, appending to existing file
-        task.receivedBytes = resumeFromBytes;
-        await _dio.download(
-          downloadUrl,
-          savePath,
-          cancelToken: task.cancelToken,
-          deleteOnError: false,
-          options: Options(
-            headers: {'Range': 'bytes=$resumeFromBytes-'},
-          ),
-          onReceiveProgress: (received, total) {
-            if (total > 0 && !task.cancelToken!.isCancelled) {
-              final actualTotal = total + resumeFromBytes;
-              final actualReceived = received + resumeFromBytes;
-              task.updateProgress(actualReceived, actualTotal);
-              _storage.updateVideoStatus(
-                task.video.bvid,
-                DownloadStatus.downloading,
-                progress: task.progress,
-              );
-              if (task.speed > 0) {
-                _notificationService.showDownloadProgressNotification(
-                  title: task.video.title,
-                  progress: (task.progress * 100).round(),
-                  status: '${task.formattedSize}  ${task.formattedSpeed}',
-                );
-              }
-              notifyListeners();
-            }
-          },
-        );
-      } else {
-        await _dio.download(
-          downloadUrl,
-          savePath,
-          cancelToken: task.cancelToken,
-          deleteOnError: false,
-          onReceiveProgress: (received, total) {
-            if (total > 0 && !task.cancelToken!.isCancelled) {
-              task.updateProgress(received, total);
-              _storage.updateVideoStatus(
-                task.video.bvid,
-                DownloadStatus.downloading,
-                progress: task.progress,
-              );
-              if (task.speed > 0) {
-                _notificationService.showDownloadProgressNotification(
-                  title: task.video.title,
-                  progress: (task.progress * 100).round(),
-                  status: '${task.formattedSize}  ${task.formattedSpeed}',
-                );
-              }
-              notifyListeners();
-            }
-          },
-        );
-      }
+      // 5. Download audio stream (progress 85% ~ 97%)
+      if (task.cancelToken!.isCancelled) return;
+      task.cancelToken = CancelToken();
+      task.speed = 0;
+      await _downloadStream(
+        url: streams.audioUrl,
+        savePath: audioPath,
+        task: task,
+        progressOffset: 0.85,
+        progressScale: 0.12,
+      );
 
+      // 6. Merge with FFmpeg (progress 97% ~ 100%)
+      if (task.cancelToken!.isCancelled) return;
+      debugPrint('Download: merging video and audio...');
+      task.progress = 0.97;
+      _notificationService.showDownloadProgressNotification(
+        title: task.video.title,
+        progress: 97,
+        status: '合并中...',
+      );
+      notifyListeners();
+      await _mergeStreams(videoPath, audioPath, outputPath);
+
+      // 7. Clean up temp files
+      try { await File(videoPath).delete(); } catch (_) {}
+      try { await File(audioPath).delete(); } catch (_) {}
+
+      // 8. Done
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
-      // Get file size
       int? fileSize;
       try {
-        final file = File(savePath);
+        final file = File(outputPath);
         if (await file.exists()) {
           fileSize = await file.length();
         }
@@ -284,7 +259,7 @@ class DownloadService extends ChangeNotifier {
         task.video.bvid,
         DownloadStatus.completed,
         progress: 1.0,
-        localPath: savePath,
+        localPath: outputPath,
         fileSize: fileSize,
       );
 
@@ -420,13 +395,89 @@ class DownloadService extends ChangeNotifier {
       final dir = await _downloadDir;
       final sanitized =
           video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final file = File('$dir/$sanitized.flv');
-      if (await file.exists()) {
-        await file.delete();
-        debugPrint('Cleaned partial file: ${file.path}');
+      for (final ext in ['.mp4', '.flv', '.video.m4s', '.audio.m4s']) {
+        final file = File('$dir/$sanitized$ext');
+        if (await file.exists()) {
+          await file.delete();
+          debugPrint('Cleaned partial file: ${file.path}');
+        }
       }
     } catch (e) {
       debugPrint('Error cleaning partial file: $e');
+    }
+  }
+
+  /// Download a single stream (video or audio) with resume support.
+  Future<void> _downloadStream({
+    required String url,
+    required String savePath,
+    required DownloadTask task,
+    required double progressOffset,
+    required double progressScale,
+  }) async {
+    int resumeFromBytes = 0;
+    final partialFile = File(savePath);
+    if (await partialFile.exists()) {
+      resumeFromBytes = await partialFile.length();
+    }
+
+    await _dio.download(
+      url,
+      savePath,
+      cancelToken: task.cancelToken,
+      deleteOnError: false,
+      options: resumeFromBytes > 0
+          ? Options(headers: {'Range': 'bytes=$resumeFromBytes-'})
+          : null,
+      onReceiveProgress: (received, total) {
+        if (total > 0 && !task.cancelToken!.isCancelled) {
+          final actualTotal =
+              resumeFromBytes > 0 ? total + resumeFromBytes : total;
+          final actualReceived =
+              resumeFromBytes > 0 ? received + resumeFromBytes : received;
+          task.updateProgress(actualReceived, actualTotal);
+          task.progress =
+              progressOffset + (actualReceived / actualTotal) * progressScale;
+          _storage.updateVideoStatus(
+            task.video.bvid,
+            DownloadStatus.downloading,
+            progress: task.progress,
+          );
+          if (task.speed > 0) {
+            _notificationService.showDownloadProgressNotification(
+              title: task.video.title,
+              progress: (task.progress * 100).round(),
+              status: '${task.formattedSize}  ${task.formattedSpeed}',
+            );
+          }
+          notifyListeners();
+        }
+      },
+    );
+  }
+
+  /// Merge separate video and audio streams into a single MP4.
+  Future<void> _mergeStreams(
+      String videoPath, String audioPath, String outputPath) async {
+    if (Platform.isWindows || Platform.isLinux) {
+      final result = await Process.run('ffmpeg', [
+        '-i', videoPath,
+        '-i', audioPath,
+        '-c', 'copy',
+        '-y',
+        outputPath,
+      ]);
+      if (result.exitCode != 0) {
+        throw Exception('FFmpeg合并失败: ${result.stderr}');
+      }
+    } else {
+      final session = await FFmpegKit.execute(
+          '-i "$videoPath" -i "$audioPath" -c copy -y "$outputPath"');
+      final returnCode = await session.getReturnCode();
+      if (!ReturnCode.isSuccess(returnCode)) {
+        final output = await session.getOutput();
+        throw Exception('FFmpeg合并失败: $output');
+      }
     }
   }
 

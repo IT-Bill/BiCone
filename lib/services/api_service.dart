@@ -4,6 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'storage_service.dart';
 
+/// DASH stream URLs returned by the Bilibili playurl API.
+class DashStreamInfo {
+  final String videoUrl;
+  final String audioUrl;
+  final int quality;
+
+  DashStreamInfo({
+    required this.videoUrl,
+    required this.audioUrl,
+    required this.quality,
+  });
+}
+
 /// Bilibili API helper with WBI request signing.
 class ApiService {
   final Dio _dio = Dio();
@@ -162,7 +175,7 @@ class ApiService {
   }
 
   /// Get the direct download URL for a video.
-  Future<String?> getVideoDownloadUrl(
+  Future<DashStreamInfo?> getVideoDashStreams(
     String bvid,
     int cid, {
     int qn = 80,
@@ -173,11 +186,11 @@ class ApiService {
         'bvid': bvid,
         'cid': cid.toString(),
         'qn': qn.toString(),
-        'fnval': '1',
+        'fnval': '16',
         'fnver': '0',
         'fourk': '1',
       });
-      debugPrint('API: getVideoDownloadUrl bvid=$bvid, cid=$cid, requested qn=$qn');
+      debugPrint('API: getVideoDashStreams bvid=$bvid, cid=$cid, requested qn=$qn');
       final resp = await _dio.get(
         'https://api.bilibili.com/x/player/wbi/playurl',
         queryParameters: params,
@@ -186,24 +199,62 @@ class ApiService {
       debugPrint('API: playurl code=${resp.data['code']}');
       if (resp.data['code'] == 0) {
         final data = resp.data['data'];
-        debugPrint('API: playurl quality=${data['quality']}, format=${data['format']}');
+        final dash = data['dash'];
+        if (dash == null) {
+          debugPrint('API: playurl dash is null');
+          return null;
+        }
         debugPrint('API: playurl accept_quality=${data['accept_quality']}');
         debugPrint('API: playurl accept_description=${data['accept_description']}');
-        if (data['v_voucher'] != null) {
-          debugPrint('API: playurl WARNING: v_voucher returned (WBI signing may have failed)');
+
+        // Select AVC (H.264, codecid=7) video stream
+        final videos = (dash['video'] as List?) ?? [];
+        final avcStreams = videos
+            .where((v) => v['codecid'] == 7)
+            .toList()
+          ..sort((a, b) => (b['id'] as int).compareTo(a['id'] as int));
+
+        // Find best quality <= requested qn
+        Map<String, dynamic>? selectedVideo;
+        for (final v in avcStreams) {
+          if ((v['id'] as int) <= qn) {
+            selectedVideo = Map<String, dynamic>.from(v);
+            break;
+          }
         }
-        final durl = data['durl'];
-        if (durl != null && (durl as List).isNotEmpty) {
-          debugPrint('API: playurl durl[0] size=${durl[0]['size']} bytes');
-          return durl[0]['url'];
-        } else {
-          debugPrint('API: playurl durl is null or empty');
+        selectedVideo ??= avcStreams.isNotEmpty
+            ? Map<String, dynamic>.from(avcStreams.last)
+            : null;
+
+        if (selectedVideo == null) {
+          debugPrint('API: No AVC video stream found');
+          return null;
         }
+
+        // Select best AAC audio (highest bandwidth)
+        final audios = (dash['audio'] as List?) ?? [];
+        if (audios.isEmpty) {
+          debugPrint('API: No audio streams found');
+          return null;
+        }
+        final sortedAudios = audios.toList()
+          ..sort((a, b) =>
+              (b['bandwidth'] as int).compareTo(a['bandwidth'] as int));
+
+        final quality = selectedVideo['id'] as int;
+        debugPrint('API: Selected video qn=$quality ${selectedVideo['codecs']}, '
+            'audio id=${sortedAudios.first['id']} bandwidth=${sortedAudios.first['bandwidth']}');
+
+        return DashStreamInfo(
+          videoUrl: selectedVideo['baseUrl'] as String,
+          audioUrl: sortedAudios.first['baseUrl'] as String,
+          quality: quality,
+        );
       } else {
         debugPrint('API: playurl failed: ${resp.data['message']}');
       }
     } catch (e) {
-      debugPrint('API: getVideoDownloadUrl error: $e');
+      debugPrint('API: getVideoDashStreams error: $e');
     }
     return null;
   }
