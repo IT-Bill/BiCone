@@ -46,4 +46,4 @@ jobs:
         with:
           files: |
             BiCone-*-windows-x64.zip
-            BiCone-*-windows-x64-setup.exe
+            installer/windows/BiCone-*-windows-x64-setup.exe
