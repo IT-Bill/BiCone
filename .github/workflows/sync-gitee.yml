@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: ["Android Release", "Windows Release"]
     types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -11,10 +12,13 @@ permissions:
 jobs:
   sync-to-gitee:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
 
     steps:
       - name: Wait for all release workflows
+        id: check
         uses: actions/github-script@v7
         with:
           script: |
@@ -37,6 +41,7 @@ jobs:
               }
             }
             core.exportVariable('ALL_DONE', 'true');
+            core.exportVariable('RELEASE_TAG', context.payload.workflow_run.head_branch);
 
       - name: Sync GitHub Release to Gitee
         if: env.ALL_DONE == 'true'
