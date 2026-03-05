@@ -10,7 +10,11 @@ class RssService {
 
   RssService({required this.rssHubUrl});
 
-  Future<List<VideoItem>> getLatestVideos(int uid) async {
+  /// Maximum retries for 503 (cache miss) responses from RSSHub.
+  static const int _maxRetries = 2;
+  static const Duration _retryDelay = Duration(seconds: 3);
+
+  Future<List<VideoItem>> getLatestVideos(int uid, {int retry = 0}) async {
     try {
       final response = await _dio.get(
         '$rssHubUrl/bilibili/user/video/$uid',
@@ -80,6 +84,16 @@ class RssService {
 
       debugPrint('RSS feed for uid=$uid: found ${videos.length} videos');
       return videos;
+    } on DioException catch (e) {
+      // RSSHub returns 503 when the feed cache is not yet built — retry
+      if (e.response?.statusCode == 503 && retry < _maxRetries) {
+        debugPrint(
+            'RSS 503 for uid=$uid, retrying (${retry + 1}/$_maxRetries)…');
+        await Future.delayed(_retryDelay);
+        return getLatestVideos(uid, retry: retry + 1);
+      }
+      debugPrint('RSS parsing error for uid=$uid: $e');
+      return [];
     } catch (e) {
       debugPrint('RSS parsing error for uid=$uid: $e');
       return [];
