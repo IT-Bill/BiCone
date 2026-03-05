@@ -40,11 +40,13 @@ class AuthService extends ChangeNotifier {
   /// Try to restore a previous login session from storage.
   Future<void> tryRestoreLogin() async {
     if (!_storage.isLoggedIn) {
+      debugPrint('Auth: Not logged in (no stored session)');
       _state = AuthState.notLoggedIn;
       notifyListeners();
       return;
     }
 
+    debugPrint('Auth: Restoring login... SESSDATA=${_storage.sessdata!.substring(0, 8)}..., userId=${_storage.userId}');
     try {
       // Verify session is still valid
       final response = await _dio.get(
@@ -52,7 +54,10 @@ class AuthService extends ChangeNotifier {
         options:
             Options(headers: {'Cookie': 'SESSDATA=${_storage.sessdata}'}),
       );
+      debugPrint('Auth: /member/my code=${response.data['code']}');
       if (response.data['code'] == 0) {
+        final myData = response.data['data'];
+        debugPrint('Auth: Session valid! name=${myData['name']}, mid=${myData['mid']}, vipType=${myData['vip']?['type']}, vipStatus=${myData['vip']?['status']}');
         // Session valid – refresh user info via public API
         final uid = _storage.userId ?? '${response.data['data']['mid']}';
         try {

@@ -64,8 +64,6 @@ class RssService {
           thumbnail = 'https:$thumbnail';
         }
 
-        debugPrint('RSS parsed item: bvid=$bvid, title=$title, author=$author');
-
         if (bvid.isNotEmpty) {
           videos.add(VideoItem(
             bvid: bvid,
