@@ -1,6 +1,8 @@
 <h1 align="center">BiCone</h1>
 
-<p align="center">Automatic Bilibili video monitoring and caching tool — never miss an update from your favorite creators.</p>
+<p align="center"><b>Your Bilibili "Anti-Expiry" Subscription Companion</b></p>
+<p align="center">One-Tap Subscribe ⚡ Auto-Monitor ⚡ Push Notifications ⚡ Auto-Cache</p>
+<p align="center">Never miss an update from your favorite creators — say goodbye to "video unavailable" forever.</p>
 
 <p align="center">
   [<a href="https://github.com/IT-Bill/BiCone/releases/latest">Download</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.ja.md">日本語</a>]

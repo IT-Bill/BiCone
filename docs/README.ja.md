@@ -1,6 +1,8 @@
 <h1 align="center">BiCone</h1>
 
-<p align="center">Bilibili 動画自動監視＆キャッシュツール — お気に入りの UP 主の更新を見逃しません。</p>
+<p align="center"><b>Bilibili 専用の「期限切れ防止」追っかけツール</b></p>
+<p align="center">ワンタップ購読 ⚡ 自動監視 ⚡ 更新通知 ⚡ 自動キャッシュ</p>
+<p align="center">UP 主の全ての更新を見逃さない——「動画は無効です」に永遠にさよなら。</p>
 
 <p align="center">
   [<a href="https://github.com/IT-Bill/BiCone/releases/latest">ダウンロード</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.en.md">English</a>]

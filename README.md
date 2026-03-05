@@ -1,6 +1,8 @@
 <h1 align="center">BiCone</h1>
 
-<p align="center">Bilibili 视频自动监测与缓存工具，再也不怕错过喜欢的 UP 主更新。</p>
+<p align="center"><b>Bilibili 专属的「防失效」追更神器</b></p>
+<p align="center">一键订阅 ⚡ 自动监测 ⚡ 更新通知 ⚡ 自动缓存</p>
+<p align="center">不错过 UP 主的每一次更新，彻底告别"视频已失效"的遗憾。</p>
 
 <p align="center">
   [<a href="https://github.com/IT-Bill/BiCone/releases/latest">下载安装</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.en.md">English</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.ja.md">日本語</a>]
