@@ -35,7 +35,15 @@ jobs:
           $zip = "BiCone-${version}-windows-x64.zip"
           Compress-Archive -Path "$src\*" -DestinationPath $zip
 
+      - name: Build installer with Inno Setup
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          iscc /DMyAppVersion=$version installer\windows\setup.iss
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: BiCone-*-windows-x64.zip
+          files: |
+            BiCone-*-windows-x64.zip
+            BiCone-*-windows-x64-setup.exe
