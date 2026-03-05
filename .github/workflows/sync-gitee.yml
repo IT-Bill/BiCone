@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows: ["Android Release", "Windows Release"]
     types: [completed]
-    branches: [main]
 
 permissions:
   contents: read
