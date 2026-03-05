@@ -22,8 +22,15 @@ class NotificationService {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const initSettings = InitializationSettings(
+    final windowsSettings = WindowsInitializationSettings(
+      appName: 'BiCone',
+      appUserModelId: 'cn.itbill.bicone',
+      guid: 'b9e7a08f-7529-4f77-b165-3f2a6525a684',
+    );
+
+    final initSettings = InitializationSettings(
       android: androidSettings,
+      windows: windowsSettings,
     );
 
     await _plugin.initialize(settings: initSettings);
