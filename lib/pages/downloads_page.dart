@@ -151,8 +151,11 @@ class _ActiveDownloads extends StatelessWidget {
                                 widthFactor: task.progress.clamp(0.0, 1.0),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: CupertinoTheme.of(context)
-                                        .primaryColor,
+                                    color: task.status == DownloadStatus.paused
+                                        ? CupertinoColors.systemGrey3
+                                            .resolveFrom(context)
+                                        : CupertinoTheme.of(context)
+                                            .primaryColor,
                                     borderRadius:
                                         BorderRadius.circular(4),
                                   ),
@@ -171,7 +174,9 @@ class _ActiveDownloads extends StatelessWidget {
                         child: Text(
                           task.status == DownloadStatus.queued
                               ? '排队中...'
-                              : '${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}',
+                              : task.status == DownloadStatus.paused
+                                  ? '已暂停  ${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}'
+                                  : '${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}',
                           style: TextStyle(
                             fontSize: 13,
                             color: CupertinoColors.secondaryLabel
@@ -193,6 +198,32 @@ class _ActiveDownloads extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(width: 8),
+                      if (task.status == DownloadStatus.downloading)
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minSize: 28,
+                          onPressed: () =>
+                              dl.pauseDownload(task.video.bvid),
+                          child: Icon(
+                            CupertinoIcons.pause_circle,
+                            size: 20,
+                            color: CupertinoColors.activeOrange
+                                .resolveFrom(context),
+                          ),
+                        )
+                      else if (task.status == DownloadStatus.paused)
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minSize: 28,
+                          onPressed: () =>
+                              dl.resumeDownload(task.video.bvid),
+                          child: Icon(
+                            CupertinoIcons.play_circle,
+                            size: 20,
+                            color: CupertinoColors.activeGreen
+                                .resolveFrom(context),
+                          ),
+                        ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         minSize: 28,

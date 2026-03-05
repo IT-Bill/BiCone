@@ -111,7 +111,8 @@ class DownloadService extends ChangeNotifier {
   List<DownloadTask> get activeTasks => _tasks
       .where((t) =>
           t.status == DownloadStatus.downloading ||
-          t.status == DownloadStatus.queued)
+          t.status == DownloadStatus.queued ||
+          t.status == DownloadStatus.paused)
       .toList();
 
   List<DownloadTask> get completedTasks =>
@@ -144,7 +145,7 @@ class DownloadService extends ChangeNotifier {
          t.status == DownloadStatus.completed ||
          t.status == DownloadStatus.none));
 
-    // Skip if already downloading or queued
+    // Skip if already downloading, queued, or paused
     if (_tasks.any((t) => t.video.bvid == video.bvid)) return;
 
     final task = DownloadTask(video: video);
@@ -203,30 +204,71 @@ class DownloadService extends ChangeNotifier {
           task.video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
       final savePath = '$dir/$sanitized.flv';
 
-      await _dio.download(
-        downloadUrl,
-        savePath,
-        cancelToken: task.cancelToken,
-        onReceiveProgress: (received, total) {
-          if (total > 0 && !task.cancelToken!.isCancelled) {
-            task.updateProgress(received, total);
-            _storage.updateVideoStatus(
-              task.video.bvid,
-              DownloadStatus.downloading,
-              progress: task.progress,
-            );
-            // Update notification progress (throttled by speed update interval)
-            if (task.speed > 0) {
-              _notificationService.showDownloadProgressNotification(
-                title: task.video.title,
-                progress: (task.progress * 100).round(),
-                status: '${task.formattedSize}  ${task.formattedSpeed}',
+      // Check for existing partial file to support resume
+      int resumeFromBytes = 0;
+      final partialFile = File(savePath);
+      if (await partialFile.exists()) {
+        resumeFromBytes = await partialFile.length();
+      }
+
+      if (resumeFromBytes > 0) {
+        // Resume download with Range header, appending to existing file
+        task.receivedBytes = resumeFromBytes;
+        await _dio.download(
+          downloadUrl,
+          savePath,
+          cancelToken: task.cancelToken,
+          deleteOnError: false,
+          options: Options(
+            headers: {'Range': 'bytes=$resumeFromBytes-'},
+          ),
+          onReceiveProgress: (received, total) {
+            if (total > 0 && !task.cancelToken!.isCancelled) {
+              final actualTotal = total + resumeFromBytes;
+              final actualReceived = received + resumeFromBytes;
+              task.updateProgress(actualReceived, actualTotal);
+              _storage.updateVideoStatus(
+                task.video.bvid,
+                DownloadStatus.downloading,
+                progress: task.progress,
               );
+              if (task.speed > 0) {
+                _notificationService.showDownloadProgressNotification(
+                  title: task.video.title,
+                  progress: (task.progress * 100).round(),
+                  status: '${task.formattedSize}  ${task.formattedSpeed}',
+                );
+              }
+              notifyListeners();
             }
-            notifyListeners();
-          }
-        },
-      );
+          },
+        );
+      } else {
+        await _dio.download(
+          downloadUrl,
+          savePath,
+          cancelToken: task.cancelToken,
+          deleteOnError: false,
+          onReceiveProgress: (received, total) {
+            if (total > 0 && !task.cancelToken!.isCancelled) {
+              task.updateProgress(received, total);
+              _storage.updateVideoStatus(
+                task.video.bvid,
+                DownloadStatus.downloading,
+                progress: task.progress,
+              );
+              if (task.speed > 0) {
+                _notificationService.showDownloadProgressNotification(
+                  title: task.video.title,
+                  progress: (task.progress * 100).round(),
+                  status: '${task.formattedSize}  ${task.formattedSpeed}',
+                );
+              }
+              notifyListeners();
+            }
+          },
+        );
+      }
 
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
@@ -252,9 +294,17 @@ class DownloadService extends ChangeNotifier {
       );
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) {
-        // cancelDownload() already handled status reset and file cleanup
-        // Only handle if task is still in the list (shouldn't normally happen)
-        if (_tasks.contains(task)) {
+        // Check if this was a pause (task still in list with paused status)
+        if (_tasks.contains(task) && task.status == DownloadStatus.paused) {
+          // Paused — keep partial file, don't remove task
+          await _storage.updateVideoStatus(
+            task.video.bvid,
+            DownloadStatus.paused,
+            progress: task.progress,
+          );
+          await _notificationService.cancelDownloadNotification();
+        } else if (_tasks.contains(task)) {
+          // Cancelled — clean up
           task.status = DownloadStatus.none;
           await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.none,
               progress: 0.0);
@@ -263,29 +313,69 @@ class DownloadService extends ChangeNotifier {
         }
       } else {
         debugPrint('Download failed for ${task.video.bvid}: $e');
-        task.status = DownloadStatus.failed;
-        await _storage.updateVideoStatus(
-            task.video.bvid, DownloadStatus.failed);
 
-        // Detect permission/path errors and provide user-friendly message
+        // Detect permission/path errors — these are unrecoverable
         final errorStr = e.toString();
         if (errorStr.contains('Operation not permitted') ||
             errorStr.contains('Permission denied') ||
             errorStr.contains('PathAccessException')) {
+          task.status = DownloadStatus.failed;
+          await _storage.updateVideoStatus(
+              task.video.bvid, DownloadStatus.failed);
           _lastError = '下载路径无写入权限，请在设置中更换下载路径。\n'
               '推荐选择 Download 目录下的新文件夹。';
         } else if (errorStr.contains('获取视频信息失败') ||
             errorStr.contains('获取视频CID失败') ||
             errorStr.contains('获取下载地址失败')) {
+          task.status = DownloadStatus.failed;
+          await _storage.updateVideoStatus(
+              task.video.bvid, DownloadStatus.failed);
           _lastError = '下载失败：视频已失效或网络异常';
           _lastErrorBvid = task.video.bvid;
         } else {
-          _lastError = '下载失败: $e';
+          // Network or other recoverable errors — pause instead of fail
+          task.status = DownloadStatus.paused;
+          await _storage.updateVideoStatus(
+            task.video.bvid,
+            DownloadStatus.paused,
+            progress: task.progress,
+          );
+          _lastError = '下载中断（可继续）: $e';
         }
       }
     }
 
     notifyListeners();
+  }
+
+  Future<void> pauseDownload(String bvid) async {
+    final task = _tasks.cast<DownloadTask?>().firstWhere(
+          (t) => t!.video.bvid == bvid,
+          orElse: () => null,
+        );
+    if (task != null && task.status == DownloadStatus.downloading) {
+      task.status = DownloadStatus.paused;
+      task.cancelToken?.cancel(); // triggers DioExceptionType.cancel handler
+    }
+    notifyListeners();
+  }
+
+  Future<void> resumeDownload(String bvid) async {
+    final task = _tasks.cast<DownloadTask?>().firstWhere(
+          (t) => t!.video.bvid == bvid,
+          orElse: () => null,
+        );
+    if (task != null && task.status == DownloadStatus.paused) {
+      task.status = DownloadStatus.queued;
+      task.speed = 0;
+      await _storage.updateVideoStatus(
+        task.video.bvid,
+        DownloadStatus.queued,
+        progress: task.progress,
+      );
+      notifyListeners();
+      _processQueue();
+    }
   }
 
   Future<void> cancelDownload(String bvid) async {
@@ -331,15 +421,16 @@ class DownloadService extends ChangeNotifier {
   }
 
   /// Call on app startup to reset any orphaned downloading/queued statuses.
+  /// Paused downloads are preserved so the user can resume them.
   Future<void> cleanupStuckDownloads() async {
     final stuck = _storage.videos.where((v) =>
         v.downloadStatus == DownloadStatus.downloading ||
         v.downloadStatus == DownloadStatus.queued);
     for (final video in stuck.toList()) {
       debugPrint('Cleaning stuck download: ${video.bvid} (${video.title})');
-      await _cleanPartialFile(video.bvid);
+      // Set stuck downloading/queued tasks to paused (preserving partial file)
       await _storage.updateVideoStatus(
-          video.bvid, DownloadStatus.none, progress: 0.0);
+          video.bvid, DownloadStatus.paused, progress: video.downloadProgress);
     }
   }
 

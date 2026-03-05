@@ -136,7 +136,8 @@ class VideoCard extends StatelessWidget {
     }
 
     if (video.downloadStatus == DownloadStatus.downloading ||
-        video.downloadStatus == DownloadStatus.queued) {
+        video.downloadStatus == DownloadStatus.queued ||
+        video.downloadStatus == DownloadStatus.paused) {
       actions.add(GestureDetector(
         onTap: onDownload,
         child: SizedBox(
@@ -144,7 +145,10 @@ class VideoCard extends StatelessWidget {
           height: 16,
           child: video.downloadStatus == DownloadStatus.downloading
               ? _buildMiniProgress(video.downloadProgress)
-              : const CupertinoActivityIndicator(radius: 8),
+              : video.downloadStatus == DownloadStatus.paused
+                  ? const Icon(CupertinoIcons.pause_circle,
+                      size: 16, color: CupertinoColors.systemOrange)
+                  : const CupertinoActivityIndicator(radius: 8),
         ),
       ));
     }
@@ -357,6 +361,10 @@ class VideoCard extends StatelessWidget {
       return _tag(context, CupertinoIcons.exclamationmark_triangle,
           '已失效', CupertinoColors.systemOrange);
     }
+    if (video.downloadStatus == DownloadStatus.paused) {
+      return _tag(context, CupertinoIcons.pause_circle,
+          '已暂停', CupertinoColors.systemOrange);
+    }
     return const SizedBox.shrink();
   }
 
@@ -406,6 +414,29 @@ class VideoCard extends StatelessWidget {
                       fontSize: 13, color: CupertinoColors.white)),
             ],
           ),
+        ),
+      ));
+    }
+
+    if (video.downloadStatus == DownloadStatus.paused) {
+      actions.add(Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemOrange.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(CupertinoIcons.pause_circle,
+                size: 14, color: CupertinoColors.systemOrange),
+            const SizedBox(width: 4),
+            Text(
+              '已暂停 ${(video.downloadProgress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(fontSize: 12, color: CupertinoColors.systemOrange),
+            ),
+          ],
         ),
       ));
     }

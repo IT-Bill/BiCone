@@ -1,4 +1,4 @@
-enum DownloadStatus { none, queued, downloading, completed, failed, deleted, invalidated }
+enum DownloadStatus { none, queued, downloading, completed, failed, deleted, invalidated, paused }
 
 class VideoItem {
   final String bvid;

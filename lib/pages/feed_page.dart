@@ -387,9 +387,16 @@ class _VideoGrid extends StatelessWidget {
                   compact: true,
                   onDownload: () async {
                     final dl = context.read<DownloadService>();
-                    if (video.downloadStatus == DownloadStatus.downloading ||
-                        video.downloadStatus == DownloadStatus.queued) {
+                    if (video.downloadStatus == DownloadStatus.downloading) {
+                      await dl.pauseDownload(video.bvid);
+                      return;
+                    }
+                    if (video.downloadStatus == DownloadStatus.queued) {
                       await dl.cancelDownload(video.bvid);
+                      return;
+                    }
+                    if (video.downloadStatus == DownloadStatus.paused) {
+                      await dl.resumeDownload(video.bvid);
                       return;
                     }
                     if (!await onBeforeDownload()) return;
