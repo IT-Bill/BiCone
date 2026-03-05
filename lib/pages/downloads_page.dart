@@ -13,6 +13,19 @@ class DownloadsPage extends StatefulWidget {
 
 class _DownloadsPageState extends State<DownloadsPage> {
   int _selectedTab = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +41,15 @@ class _DownloadsPageState extends State<DownloadsPage> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: CupertinoSlidingSegmentedControl<int>(
                 groupValue: _selectedTab,
-                onValueChanged: (v) =>
-                    setState(() => _selectedTab = v ?? 0),
+                onValueChanged: (v) {
+                  final index = v ?? 0;
+                  setState(() => _selectedTab = index);
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
                 children: const {
                   0: Text('进行中'),
                   1: Text('已完成'),
@@ -37,9 +57,16 @@ class _DownloadsPageState extends State<DownloadsPage> {
               ),
             ),
             Expanded(
-              child: _selectedTab == 0
-                  ? const _ActiveDownloads()
-                  : const _CompletedDownloads(),
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _selectedTab = index);
+                },
+                children: const [
+                  _ActiveDownloads(),
+                  _CompletedDownloads(),
+                ],
+              ),
             ),
           ],
         ),
