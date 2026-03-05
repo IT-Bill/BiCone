@@ -24,13 +24,16 @@
 > [!NOTE]
 > BiCone currently supports **Android** and **Windows**. iOS support is planned for a future release.
 
+> [!WARNING]
+> This project and its code are intended solely for technical research and learning purposes. The tool itself does not provide any copyrighted content. Users must ensure compliance with applicable laws and regulations when using this tool, particularly those related to copyright. The developer assumes no responsibility for any copyright disputes or legal liabilities arising from the use of this tool. Please use it responsibly, ensure your actions are lawful, and only use related content with proper authorization.
+
 ## Features
 
 - **Subscribe to Uploaders** — Add your favorite Bilibili creators and automatically monitor for new uploads via RSSHub
 - **Auto-Cache** — Automatically download new videos to local storage, no manual effort needed
-- **Quality Selection** — Choose from 360P to 1080P60
-- **Notifications** — Get push notifications when new videos are published
-- **Download Manager** — View download progress, pause/resume, and manage cached videos
+- **High-Speed Download** — Multi-threaded parallel download with speeds over 20MB/s
+- **Quality Selection** — Choose from 360P to 4K
+- **Download Manager** — View download progress, pause/resume with resume support, and manage cached videos
 - **Cross-Platform** — Available on both Android and Windows
 
 ## Installation
@@ -94,9 +97,6 @@ In the "Settings" tab you can adjust:
 - Notification toggle
 
 <!-- ![Settings Page](docs/images/settings.png) -->
-
-> [!WARNING]
-> Please use this tool only for personal study and backup purposes. Respect the copyrights of content creators.
 
 ## License
 
