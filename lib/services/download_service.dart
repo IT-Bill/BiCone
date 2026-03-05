@@ -246,29 +246,51 @@ class DownloadService extends ChangeNotifier {
       final audioPath = '$dir/$sanitized.audio.m4s';
       final outputPath = '$dir/$sanitized.mp4';
 
-      // 4. Download video stream
-      task.phase = DownloadPhase.downloadingVideo;
-      notifyListeners();
-      await _downloadStream(
-        url: streams.videoUrl,
-        savePath: videoPath,
-        task: task,
-        streamProgress: task.videoStream,
-      );
-      task.videoStream.markComplete();
+      // 4. Download video stream (skip if already completed)
+      final videoFile = File(videoPath);
+      final videoExists = await videoFile.exists();
+      final videoComplete = videoExists && await videoFile.length() > 0 &&
+          !await File('$videoPath.seg0').exists(); // no segment files = merged
+      if (videoComplete) {
+        debugPrint('Download: video stream already complete, skipping');
+        task.videoStream.receivedBytes = await videoFile.length();
+        task.videoStream.totalBytes = task.videoStream.receivedBytes;
+        task.videoStream.markComplete();
+      } else {
+        task.phase = DownloadPhase.downloadingVideo;
+        notifyListeners();
+        await _downloadStream(
+          url: streams.videoUrl,
+          savePath: videoPath,
+          task: task,
+          streamProgress: task.videoStream,
+        );
+        task.videoStream.markComplete();
+      }
 
-      // 5. Download audio stream
+      // 5. Download audio stream (skip if already completed)
       if (task.cancelToken!.isCancelled) return;
-      task.cancelToken = CancelToken();
-      task.phase = DownloadPhase.downloadingAudio;
-      notifyListeners();
-      await _downloadStream(
-        url: streams.audioUrl,
-        savePath: audioPath,
-        task: task,
-        streamProgress: task.audioStream,
-      );
-      task.audioStream.markComplete();
+      final audioFile = File(audioPath);
+      final audioExists = await audioFile.exists();
+      final audioComplete = audioExists && await audioFile.length() > 0 &&
+          !await File('$audioPath.seg0').exists();
+      if (audioComplete) {
+        debugPrint('Download: audio stream already complete, skipping');
+        task.audioStream.receivedBytes = await audioFile.length();
+        task.audioStream.totalBytes = task.audioStream.receivedBytes;
+        task.audioStream.markComplete();
+      } else {
+        task.cancelToken = CancelToken();
+        task.phase = DownloadPhase.downloadingAudio;
+        notifyListeners();
+        await _downloadStream(
+          url: streams.audioUrl,
+          savePath: audioPath,
+          task: task,
+          streamProgress: task.audioStream,
+        );
+        task.audioStream.markComplete();
+      }
 
       // 6. Merge with FFmpeg
       if (task.cancelToken!.isCancelled) return;
@@ -540,12 +562,12 @@ class DownloadService extends ChangeNotifier {
       final expectedSize = seg.end - seg.start + 1;
       if (await segFile.exists()) {
         final fileLen = await segFile.length();
-        if (fileLen == expectedSize) {
+        if (fileLen >= expectedSize) {
           segmentReceived[seg.index] = expectedSize;
           seg.completed = true;
         } else {
-          // Partial or corrupt — delete and re-download
-          await segFile.delete();
+          // Partial — count existing bytes for progress display
+          segmentReceived[seg.index] = fileLen;
         }
       }
     }
@@ -561,27 +583,47 @@ class DownloadService extends ChangeNotifier {
     // Download remaining segments with concurrency limit
     final pending = segments.where((s) => !s.completed).toList();
     Future<void> downloadSegment(_DownloadSegment seg) async {
-      final options = Options(headers: {
-        'Range': 'bytes=${seg.start}-${seg.end}',
-        if (_storage.sessdata != null)
-          'Cookie': 'SESSDATA=${_storage.sessdata}',
-      });
-      await _dio.download(
+      // Per-segment resume: check how much is already saved
+      final segFile = File(seg.path);
+      int segDownloaded = 0;
+      if (await segFile.exists()) {
+        segDownloaded = await segFile.length();
+      }
+      final expectedSize = seg.end - seg.start + 1;
+      if (segDownloaded >= expectedSize) {
+        seg.completed = true;
+        segmentReceived[seg.index] = expectedSize;
+        return;
+      }
+
+      final response = await _dio.get<ResponseBody>(
         downloadUrl,
-        seg.path,
         cancelToken: task.cancelToken,
-        deleteOnError: true,
-        options: options,
-        onReceiveProgress: (received, total) {
-          if (!task.cancelToken!.isCancelled) {
-            segmentReceived[seg.index] = received;
-            final totalReceived = segmentReceived.reduce((a, b) => a + b);
-            streamProgress.update(totalReceived, totalSize);
-            _updateOverallProgress(task, streamProgress);
-            _notifyThrottled(task, streamProgress);
-          }
-        },
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Range': 'bytes=${seg.start + segDownloaded}-${seg.end}',
+            if (_storage.sessdata != null)
+              'Cookie': 'SESSDATA=${_storage.sessdata}',
+          },
+        ),
       );
+
+      final raf = await segFile.open(mode: FileMode.append);
+      try {
+        await for (final chunk in response.data!.stream) {
+          if (task.cancelToken!.isCancelled) break;
+          raf.writeFromSync(chunk);
+          segDownloaded += chunk.length;
+          segmentReceived[seg.index] = segDownloaded;
+          final totalReceived = segmentReceived.reduce((a, b) => a + b);
+          streamProgress.update(totalReceived, totalSize);
+          _updateOverallProgress(task, streamProgress);
+          _notifyThrottled(task, streamProgress);
+        }
+      } finally {
+        await raf.close();
+      }
       seg.completed = true;
     }
 
@@ -630,28 +672,48 @@ class DownloadService extends ChangeNotifier {
       resumeFromBytes = await partialFile.length();
     }
 
-    await _dio.download(
+    final response = await _dio.get<ResponseBody>(
       url,
-      savePath,
       cancelToken: task.cancelToken,
-      deleteOnError: false,
-      options: Options(headers: {
-        if (resumeFromBytes > 0) 'Range': 'bytes=$resumeFromBytes-',
-        if (_storage.sessdata != null)
-          'Cookie': 'SESSDATA=${_storage.sessdata}',
-      }),
-      onReceiveProgress: (received, total) {
-        if (total > 0 && !task.cancelToken!.isCancelled) {
-          final streamTotal =
-              resumeFromBytes > 0 ? total + resumeFromBytes : total;
-          final streamReceived =
-              resumeFromBytes > 0 ? received + resumeFromBytes : received;
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: {
+          if (resumeFromBytes > 0) 'Range': 'bytes=$resumeFromBytes-',
+          if (_storage.sessdata != null)
+            'Cookie': 'SESSDATA=${_storage.sessdata}',
+        },
+      ),
+    );
+
+    // Determine total size from Content-Range or Content-Length
+    int streamTotal = 0;
+    final contentRange = response.headers.value('content-range');
+    if (contentRange != null) {
+      // e.g. "bytes 1000-9999/10000"
+      final match = RegExp(r'/(\d+)').firstMatch(contentRange);
+      if (match != null) streamTotal = int.tryParse(match.group(1)!) ?? 0;
+    }
+    if (streamTotal == 0) {
+      final cl = response.headers.value('content-length');
+      streamTotal = resumeFromBytes + (int.tryParse(cl ?? '') ?? 0);
+    }
+
+    int streamReceived = resumeFromBytes;
+    final raf = await partialFile.open(mode: FileMode.append);
+    try {
+      await for (final chunk in response.data!.stream) {
+        if (task.cancelToken!.isCancelled) break;
+        raf.writeFromSync(chunk);
+        streamReceived += chunk.length;
+        if (streamTotal > 0) {
           streamProgress.update(streamReceived, streamTotal);
           _updateOverallProgress(task, streamProgress);
           _notifyThrottled(task, streamProgress);
         }
-      },
-    );
+      }
+    } finally {
+      await raf.close();
+    }
   }
 
   void _updateOverallProgress(DownloadTask task, StreamProgress streamProgress) {
