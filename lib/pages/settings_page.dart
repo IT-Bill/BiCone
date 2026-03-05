@@ -179,6 +179,8 @@ class SettingsPage extends StatelessWidget {
         return '1080P+';
       case 116:
         return '1080P60';
+      case 120:
+        return '4K';
       default:
         return '未知';
     }
@@ -259,6 +261,7 @@ class SettingsPage extends StatelessWidget {
       (80, '1080P'),
       (112, '1080P+ (需要大会员)'),
       (116, '1080P60 (需要大会员)'),
+      (120, '4K (需要大会员)'),
     ];
     showCupertinoModalPopup(
       context: context,

@@ -144,15 +144,18 @@ class ApiService {
     int qn = 80,
   }) async {
     try {
+      await _ensureWbiKeys();
+      final params = _signParams({
+        'bvid': bvid,
+        'cid': cid.toString(),
+        'qn': qn.toString(),
+        'fnval': '1',
+        'fnver': '0',
+        'fourk': '1',
+      });
       final resp = await _dio.get(
-        'https://api.bilibili.com/x/player/playurl',
-        queryParameters: {
-          'bvid': bvid,
-          'cid': cid,
-          'qn': qn,
-          'fnval': 1,
-          'fourk': 1,
-        },
+        'https://api.bilibili.com/x/player/wbi/playurl',
+        queryParameters: params,
         options: _authOptions,
       );
       if (resp.data['code'] == 0) {
