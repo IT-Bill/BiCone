@@ -131,73 +131,62 @@ class _ActiveDownloads extends StatelessWidget {
                         fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                   const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: SizedBox(
-                      height: 4,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemGrey5
-                                      .resolveFrom(context),
-                                  borderRadius:
-                                      BorderRadius.circular(4),
-                                ),
-                              ),
-                              FractionallySizedBox(
-                                widthFactor: task.progress.clamp(0.0, 1.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: task.status == DownloadStatus.paused
-                                        ? CupertinoColors.systemGrey3
-                                            .resolveFrom(context)
-                                        : CupertinoTheme.of(context)
-                                            .primaryColor,
-                                    borderRadius:
-                                        BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                  if (task.status == DownloadStatus.queued)
+                    Text(
+                      '排队中...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CupertinoColors.secondaryLabel
+                            .resolveFrom(context),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          task.status == DownloadStatus.queued
-                              ? '排队中...'
-                              : task.status == DownloadStatus.paused
-                                  ? '已暂停  ${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}'
-                                  : '${(task.progress * 100).toStringAsFixed(1)}%  ${task.formattedSize}',
+                    )
+                  else if (task.phase == DownloadPhase.preparing)
+                    Text(
+                      '准备中...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CupertinoColors.secondaryLabel
+                            .resolveFrom(context),
+                      ),
+                    )
+                  else if (task.phase == DownloadPhase.merging)
+                    Row(
+                      children: [
+                        const CupertinoActivityIndicator(radius: 8),
+                        const SizedBox(width: 8),
+                        Text(
+                          '合并中...',
                           style: TextStyle(
                             fontSize: 13,
                             color: CupertinoColors.secondaryLabel
                                 .resolveFrom(context),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (task.status == DownloadStatus.downloading &&
-                          task.speed > 0) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          '${task.formattedSpeed}  剩余${task.formattedEta}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: CupertinoColors.tertiaryLabel
-                                .resolveFrom(context),
-                          ),
                         ),
                       ],
-                      const SizedBox(width: 8),
+                    )
+                  else ...[
+                    _buildStreamProgressBar(
+                      context,
+                      label: '视频',
+                      stream: task.videoStream,
+                      active: task.phase == DownloadPhase.downloadingVideo,
+                      completed: task.phase == DownloadPhase.downloadingAudio,
+                      paused: task.status == DownloadStatus.paused,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStreamProgressBar(
+                      context,
+                      label: '音频',
+                      stream: task.audioStream,
+                      active: task.phase == DownloadPhase.downloadingAudio,
+                      completed: false,
+                      paused: task.status == DownloadStatus.paused,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Spacer(),
                       if (task.status == DownloadStatus.downloading)
                         CupertinoButton(
                           padding: EdgeInsets.zero,
@@ -244,6 +233,115 @@ class _ActiveDownloads extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildStreamProgressBar(
+    BuildContext context, {
+    required String label,
+    required StreamProgress stream,
+    required bool active,
+    required bool completed,
+    required bool paused,
+  }) {
+    final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final trackColor = CupertinoColors.systemGrey5.resolveFrom(context);
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final pct = (stream.progress * 100).toStringAsFixed(1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: active ? primaryColor : secondaryColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$pct%',
+              style: TextStyle(
+                fontSize: 13,
+                color: active ? primaryColor : secondaryColor,
+              ),
+            ),
+            const Spacer(),
+            if (stream.totalBytes > 0)
+              Text(
+                stream.formattedSize,
+                style: TextStyle(fontSize: 12, color: secondaryColor),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: SizedBox(
+            height: 5,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: trackColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: stream.progress.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: paused
+                              ? CupertinoColors.systemGrey3
+                                  .resolveFrom(context)
+                              : completed
+                                  ? CupertinoColors.activeGreen
+                                  : primaryColor,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        if (completed && stream.completeDuration != null)
+          Text(
+            '完成 (${stream.completeDuration})',
+            style: const TextStyle(
+                fontSize: 11, color: CupertinoColors.activeGreen),
+          )
+        else if (active && stream.speed > 0)
+          Row(
+            children: [
+              Text(
+                stream.formattedSpeed,
+                style: TextStyle(fontSize: 11, color: secondaryColor),
+              ),
+              if (stream.formattedEta.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '剩余 ${stream.formattedEta}',
+                  style: TextStyle(fontSize: 11, color: secondaryColor),
+                ),
+              ],
+            ],
+          )
+        else if (paused)
+          Text(
+            '已暂停',
+            style: TextStyle(fontSize: 11, color: secondaryColor),
+          ),
+      ],
     );
   }
 }

@@ -8,26 +8,25 @@ import 'api_service.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 
-class DownloadTask {
-  final VideoItem video;
-  double progress;
-  DownloadStatus status;
-  CancelToken? cancelToken;
-  int receivedBytes;
-  int totalBytes;
-  double speed; // bytes per second
-  DateTime? _lastSpeedUpdate;
-  int _lastReceivedBytes;
+enum DownloadPhase { preparing, downloadingVideo, downloadingAudio, merging }
 
-  DownloadTask({
-    required this.video,
-    this.progress = 0.0,
-    this.status = DownloadStatus.queued,
-    this.cancelToken,
-    this.receivedBytes = 0,
-    this.totalBytes = 0,
-    this.speed = 0,
-  }) : _lastReceivedBytes = 0;
+class StreamProgress {
+  int receivedBytes = 0;
+  int totalBytes = 0;
+  double speed = 0;
+  DateTime? _lastSpeedUpdate;
+  int _lastReceivedBytes = 0;
+  DateTime? _startTime;
+  String? completeDuration;
+
+  double get progress =>
+      totalBytes > 0 ? (receivedBytes / totalBytes).clamp(0.0, 1.0) : 0.0;
+
+  String get formattedSize {
+    final received = _formatBytes(receivedBytes);
+    final total = totalBytes > 0 ? _formatBytes(totalBytes) : '?';
+    return '$received / $total';
+  }
 
   String get formattedSpeed {
     if (speed <= 0) return '';
@@ -35,12 +34,6 @@ class DownloadTask {
       return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
     }
     return '${(speed / 1024).toStringAsFixed(0)} KB/s';
-  }
-
-  String get formattedSize {
-    final received = _formatBytes(receivedBytes);
-    final total = totalBytes > 0 ? _formatBytes(totalBytes) : '?';
-    return '$received / $total';
   }
 
   String get formattedEta {
@@ -52,25 +45,10 @@ class DownloadTask {
     return '${seconds ~/ 3600}h${(seconds % 3600) ~/ 60}m';
   }
 
-  static String _formatBytes(int bytes) {
-    if (bytes >= 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-    }
-    if (bytes >= 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    if (bytes >= 1024) {
-      return '${(bytes / 1024).toStringAsFixed(0)} KB';
-    }
-    return '$bytes B';
-  }
-
-  void updateProgress(int received, int total) {
+  void update(int received, int total) {
     receivedBytes = received;
     totalBytes = total;
-    if (total > 0) {
-      progress = received / total;
-    }
+    _startTime ??= DateTime.now();
 
     final now = DateTime.now();
     if (_lastSpeedUpdate != null) {
@@ -86,6 +64,51 @@ class DownloadTask {
       _lastReceivedBytes = received;
     }
   }
+
+  void markComplete() {
+    if (_startTime != null) {
+      final elapsed = DateTime.now().difference(_startTime!).inSeconds;
+      if (elapsed < 60) {
+        completeDuration = '${elapsed}s';
+      } else if (elapsed < 3600) {
+        completeDuration = '${elapsed ~/ 60}m${elapsed % 60}s';
+      } else {
+        completeDuration =
+            '${elapsed ~/ 3600}h${(elapsed % 3600) ~/ 60}m';
+      }
+    }
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '$bytes B';
+  }
+}
+
+class DownloadTask {
+  final VideoItem video;
+  double progress; // overall progress 0.0-1.0
+  DownloadStatus status;
+  CancelToken? cancelToken;
+  DownloadPhase phase;
+  final StreamProgress videoStream = StreamProgress();
+  final StreamProgress audioStream = StreamProgress();
+
+  DownloadTask({
+    required this.video,
+    this.progress = 0.0,
+    this.status = DownloadStatus.queued,
+    this.cancelToken,
+    this.phase = DownloadPhase.preparing,
+  });
 }
 
 class DownloadService extends ChangeNotifier {
@@ -179,6 +202,7 @@ class DownloadService extends ChangeNotifier {
   Future<void> _downloadVideo(DownloadTask task) async {
     task.status = DownloadStatus.downloading;
     task.cancelToken = CancelToken();
+    task.phase = DownloadPhase.preparing;
     notifyListeners();
 
     try {
@@ -208,34 +232,38 @@ class DownloadService extends ChangeNotifier {
       final audioPath = '$dir/$sanitized.audio.m4s';
       final outputPath = '$dir/$sanitized.mp4';
 
-      // 4. Download video stream (progress 0% ~ 85%)
+      // 4. Download video stream
+      task.phase = DownloadPhase.downloadingVideo;
+      notifyListeners();
       await _downloadStream(
         url: streams.videoUrl,
         savePath: videoPath,
         task: task,
-        progressOffset: 0.0,
-        progressScale: 0.85,
+        streamProgress: task.videoStream,
       );
+      task.videoStream.markComplete();
 
-      // 5. Download audio stream (progress 85% ~ 97%)
+      // 5. Download audio stream
       if (task.cancelToken!.isCancelled) return;
       task.cancelToken = CancelToken();
-      task.speed = 0;
+      task.phase = DownloadPhase.downloadingAudio;
+      notifyListeners();
       await _downloadStream(
         url: streams.audioUrl,
         savePath: audioPath,
         task: task,
-        progressOffset: 0.85,
-        progressScale: 0.12,
+        streamProgress: task.audioStream,
       );
+      task.audioStream.markComplete();
 
-      // 6. Merge with FFmpeg (progress 97% ~ 100%)
+      // 6. Merge with FFmpeg
       if (task.cancelToken!.isCancelled) return;
       debugPrint('Download: merging video and audio...');
-      task.progress = 0.97;
+      task.phase = DownloadPhase.merging;
+      task.progress = 0.99;
       _notificationService.showDownloadProgressNotification(
         title: task.video.title,
-        progress: 97,
+        progress: 99,
         status: '合并中...',
       );
       notifyListeners();
@@ -342,7 +370,6 @@ class DownloadService extends ChangeNotifier {
         );
     if (task != null && task.status == DownloadStatus.paused) {
       task.status = DownloadStatus.queued;
-      task.speed = 0;
       await _storage.updateVideoStatus(
         task.video.bvid,
         DownloadStatus.queued,
@@ -412,8 +439,7 @@ class DownloadService extends ChangeNotifier {
     required String url,
     required String savePath,
     required DownloadTask task,
-    required double progressOffset,
-    required double progressScale,
+    required StreamProgress streamProgress,
   }) async {
     int resumeFromBytes = 0;
     final partialFile = File(savePath);
@@ -431,23 +457,32 @@ class DownloadService extends ChangeNotifier {
           : null,
       onReceiveProgress: (received, total) {
         if (total > 0 && !task.cancelToken!.isCancelled) {
-          final actualTotal =
+          final streamTotal =
               resumeFromBytes > 0 ? total + resumeFromBytes : total;
-          final actualReceived =
+          final streamReceived =
               resumeFromBytes > 0 ? received + resumeFromBytes : received;
-          task.updateProgress(actualReceived, actualTotal);
-          task.progress =
-              progressOffset + (actualReceived / actualTotal) * progressScale;
+
+          streamProgress.update(streamReceived, streamTotal);
+
+          // Overall progress: video progress contributes 0.0-0.5, audio 0.5-1.0
+          if (task.phase == DownloadPhase.downloadingVideo) {
+            task.progress = (streamProgress.progress * 0.5).clamp(0.0, 0.5);
+          } else if (task.phase == DownloadPhase.downloadingAudio) {
+            task.progress = (0.5 + streamProgress.progress * 0.5).clamp(0.5, 0.98);
+          }
+
           _storage.updateVideoStatus(
             task.video.bvid,
             DownloadStatus.downloading,
             progress: task.progress,
           );
-          if (task.speed > 0) {
+          if (streamProgress.speed > 0) {
+            final phaseLabel = task.phase == DownloadPhase.downloadingVideo
+                ? '视频' : '音频';
             _notificationService.showDownloadProgressNotification(
               title: task.video.title,
               progress: (task.progress * 100).round(),
-              status: '${task.formattedSize}  ${task.formattedSpeed}',
+              status: '$phaseLabel ${streamProgress.formattedSize} ${streamProgress.formattedSpeed}',
             );
           }
           notifyListeners();
@@ -500,7 +535,7 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cancel active downloads and delete local files for all videos by a given UP主.
+  /// Cancel active downloads and delete local files for all videos by a given UP主
   Future<void> cancelAndDeleteByAuthor(List<VideoItem> videos) async {
     for (final video in videos) {
       // Cancel any active download

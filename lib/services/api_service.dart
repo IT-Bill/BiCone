@@ -9,11 +9,15 @@ class DashStreamInfo {
   final String videoUrl;
   final String audioUrl;
   final int quality;
+  final int videoBandwidth; // bits per second
+  final int audioBandwidth; // bits per second
 
   DashStreamInfo({
     required this.videoUrl,
     required this.audioUrl,
     required this.quality,
+    required this.videoBandwidth,
+    required this.audioBandwidth,
   });
 }
 
@@ -249,6 +253,8 @@ class ApiService {
           videoUrl: selectedVideo['baseUrl'] as String,
           audioUrl: sortedAudios.first['baseUrl'] as String,
           quality: quality,
+          videoBandwidth: selectedVideo['bandwidth'] as int,
+          audioBandwidth: sortedAudios.first['bandwidth'] as int,
         );
       } else {
         debugPrint('API: playurl failed: ${resp.data['message']}');

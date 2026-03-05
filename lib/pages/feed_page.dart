@@ -383,11 +383,16 @@ class _VideoGrid extends StatelessWidget {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final video = videos[index];
+                final dl = context.read<DownloadService>();
+                final task = dl.tasks
+                    .cast<DownloadTask?>()
+                    .firstWhere((t) => t!.video.bvid == video.bvid,
+                        orElse: () => null);
                 return VideoCard(
                   video: video,
                   compact: true,
+                  downloadTask: task,
                   onDownload: () async {
-                    final dl = context.read<DownloadService>();
                     if (video.downloadStatus == DownloadStatus.downloading) {
                       await dl.pauseDownload(video.bvid);
                       return;

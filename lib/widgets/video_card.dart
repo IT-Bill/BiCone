@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator, AlwaysStoppedAnimation;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/video_item.dart';
+import '../services/download_service.dart';
 import '../theme.dart';
 
 class VideoCard extends StatelessWidget {
@@ -11,6 +13,7 @@ class VideoCard extends StatelessWidget {
   final VoidCallback? onRestore;
   final VoidCallback? onPlay;
   final bool compact;
+  final DownloadTask? downloadTask;
 
   const VideoCard({
     super.key,
@@ -20,6 +23,7 @@ class VideoCard extends StatelessWidget {
     this.onRestore,
     this.onPlay,
     this.compact = false,
+    this.downloadTask,
   });
 
   @override
@@ -138,6 +142,31 @@ class VideoCard extends StatelessWidget {
     if (video.downloadStatus == DownloadStatus.downloading ||
         video.downloadStatus == DownloadStatus.queued ||
         video.downloadStatus == DownloadStatus.paused) {
+      // Phase label for downloading state
+      if (video.downloadStatus == DownloadStatus.downloading && downloadTask != null) {
+        String phaseLabel;
+        switch (downloadTask!.phase) {
+          case DownloadPhase.downloadingVideo:
+            phaseLabel = '视频下载';
+            break;
+          case DownloadPhase.downloadingAudio:
+            phaseLabel = '音频下载';
+            break;
+          case DownloadPhase.merging:
+            phaseLabel = '合并中';
+            break;
+          default:
+            phaseLabel = '准备中';
+        }
+        actions.add(Text(
+          phaseLabel,
+          style: TextStyle(
+            fontSize: 10,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ));
+        actions.add(const SizedBox(width: 4));
+      }
       actions.add(GestureDetector(
         onTap: onDownload,
         child: SizedBox(
@@ -246,6 +275,147 @@ class VideoCard extends StatelessWidget {
     );
   }
 
+  Widget _buildDownloadProgress(BuildContext context) {
+    final task = downloadTask!;
+    final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final trackColor = CupertinoColors.systemGrey5.resolveFrom(context);
+
+    if (task.phase == DownloadPhase.merging) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            const CupertinoActivityIndicator(radius: 8),
+            const SizedBox(width: 8),
+            Text('合并中...', style: TextStyle(fontSize: 12, color: secondaryColor)),
+          ],
+        ),
+      );
+    }
+
+    if (task.phase == DownloadPhase.preparing) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            const CupertinoActivityIndicator(radius: 8),
+            const SizedBox(width: 8),
+            Text('准备中...', style: TextStyle(fontSize: 12, color: secondaryColor)),
+          ],
+        ),
+      );
+    }
+
+    Widget buildStreamBar({
+      required String label,
+      required StreamProgress stream,
+      required bool active,
+      required bool completed,
+    }) {
+      final pct = (stream.progress * 100).toStringAsFixed(0);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label + percentage + size
+          Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: active ? AppTheme.biliPink : secondaryColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$pct%',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: active ? AppTheme.biliPink : secondaryColor,
+                ),
+              ),
+              const Spacer(),
+              if (stream.totalBytes > 0)
+                Text(
+                  stream.formattedSize,
+                  style: TextStyle(fontSize: 10, color: secondaryColor),
+                ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: SizedBox(
+              height: 4,
+              child: LinearProgressIndicator(
+                value: stream.progress,
+                backgroundColor: trackColor,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  completed
+                      ? CupertinoColors.activeGreen
+                      : active
+                          ? AppTheme.biliPink
+                          : CupertinoColors.systemGrey3,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          // Speed + ETA or completion duration
+          if (completed && stream.completeDuration != null)
+            Text(
+              '完成 (${stream.completeDuration})',
+              style: TextStyle(fontSize: 10, color: CupertinoColors.activeGreen),
+            )
+          else if (active && stream.speed > 0)
+            Row(
+              children: [
+                Text(
+                  stream.formattedSpeed,
+                  style: TextStyle(fontSize: 10, color: secondaryColor),
+                ),
+                if (stream.formattedEta.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '剩余 ${stream.formattedEta}',
+                    style: TextStyle(fontSize: 10, color: secondaryColor),
+                  ),
+                ],
+              ],
+            ),
+        ],
+      );
+    }
+
+    final videoCompleted = task.phase == DownloadPhase.downloadingAudio ||
+        task.phase == DownloadPhase.merging;
+    final videoActive = task.phase == DownloadPhase.downloadingVideo;
+    final audioActive = task.phase == DownloadPhase.downloadingAudio;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          buildStreamBar(
+            label: '视频',
+            stream: task.videoStream,
+            active: videoActive,
+            completed: videoCompleted,
+          ),
+          const SizedBox(height: 6),
+          buildStreamBar(
+            label: '音频',
+            stream: task.audioStream,
+            active: audioActive,
+            completed: false,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFull(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -340,6 +510,11 @@ class VideoCard extends StatelessWidget {
                     ..._buildFullActions(context),
                   ],
                 ),
+
+                // ── Download progress ──
+                if (downloadTask != null &&
+                    video.downloadStatus == DownloadStatus.downloading)
+                  _buildDownloadProgress(context),
               ],
             ),
           ),
@@ -442,27 +617,29 @@ class VideoCard extends StatelessWidget {
     }
 
     if (video.downloadStatus == DownloadStatus.downloading) {
-      actions.add(Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: CupertinoColors.systemGrey5.resolveFrom(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: _buildMiniProgress(video.downloadProgress),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '${(video.downloadProgress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+      actions.add(CupertinoButton(
+        padding: EdgeInsets.zero,
+        minSize: 32,
+        onPressed: onDownload,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemGrey5.resolveFrom(context),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(CupertinoIcons.pause_circle,
+                  size: 14, color: CupertinoColors.systemGrey),
+              const SizedBox(width: 4),
+              Text(
+                '${(video.downloadProgress * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ));
     }
