@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
@@ -111,6 +112,21 @@ class DownloadTask {
   });
 }
 
+class _DownloadSegment {
+  final int index;
+  final int start;
+  final int end;
+  final String path;
+  bool completed = false;
+
+  _DownloadSegment({
+    required this.index,
+    required this.start,
+    required this.end,
+    required this.path,
+  });
+}
+
 class DownloadService extends ChangeNotifier {
   final ApiService _apiService;
   final StorageService _storage;
@@ -144,9 +160,7 @@ class DownloadService extends ChangeNotifier {
       _tasks.where((t) => t.status == DownloadStatus.completed).toList();
 
   DownloadService(this._apiService, this._storage, this._notificationService) {
-    _dio.options.headers['User-Agent'] =
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    _dio.options.headers['User-Agent'] = 'Mozilla/5.0';
     _dio.options.headers['Referer'] = 'https://www.bilibili.com';
   }
 
@@ -428,14 +442,183 @@ class DownloadService extends ChangeNotifier {
           await file.delete();
           debugPrint('Cleaned partial file: ${file.path}');
         }
+        // Clean segment files (.seg0, .seg1, ...)
+        for (int i = 0; i < 100; i++) {
+          final segFile = File('$dir/$sanitized$ext.seg$i');
+          if (await segFile.exists()) {
+            await segFile.delete();
+            debugPrint('Cleaned segment file: ${segFile.path}');
+          } else {
+            break; // No more segments
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error cleaning partial file: $e');
     }
   }
 
-  /// Download a single stream (video or audio) with resume support.
+  /// Downgrade HTTPS to HTTP to avoid TLS overhead (like BBDown).
+  String _forceHttp(String url) {
+    if (url.startsWith('https://')) {
+      // Don't downgrade mcdn domains
+      if (url.contains('.mcdn.bilivideo.cn')) return url;
+      return 'http://${url.substring(8)}';
+    }
+    return url;
+  }
+
+  static const int _segmentSize = 10 * 1024 * 1024; // 10 MB per segment
+  static const int _maxConcurrent = 8; // Max parallel connections
+
+  /// Download a single stream using multi-segment parallel download.
   Future<void> _downloadStream({
+    required String url,
+    required String savePath,
+    required DownloadTask task,
+    required StreamProgress streamProgress,
+  }) async {
+    final downloadUrl = _forceHttp(url);
+
+    // Get file size via HEAD request
+    int totalSize = 0;
+    try {
+      final headResp = await _dio.head<void>(
+        downloadUrl,
+        cancelToken: task.cancelToken,
+        options: Options(headers: {
+          if (_storage.sessdata != null)
+            'Cookie': 'SESSDATA=${_storage.sessdata}',
+        }),
+      );
+      final contentLength = headResp.headers.value('content-length');
+      if (contentLength != null) {
+        totalSize = int.tryParse(contentLength) ?? 0;
+      }
+    } catch (e) {
+      debugPrint('HEAD request failed, falling back to single download: $e');
+    }
+
+    // Fall back to single-connection if size unknown or too small
+    if (totalSize <= _segmentSize) {
+      await _downloadSingleStream(
+        url: downloadUrl,
+        savePath: savePath,
+        task: task,
+        streamProgress: streamProgress,
+      );
+      return;
+    }
+
+    streamProgress.totalBytes = totalSize;
+
+    // Calculate segments
+    final segments = <_DownloadSegment>[];
+    int offset = 0;
+    int index = 0;
+    while (offset < totalSize) {
+      final end = min(offset + _segmentSize - 1, totalSize - 1);
+      segments.add(_DownloadSegment(
+        index: index,
+        start: offset,
+        end: end,
+        path: '$savePath.seg$index',
+      ));
+      offset = end + 1;
+      index++;
+    }
+
+    debugPrint('Multi-segment download: ${segments.length} segments, '
+        'totalSize=${(totalSize / 1024 / 1024).toStringAsFixed(1)}MB');
+
+    // Track per-segment received bytes
+    final segmentReceived = List<int>.filled(segments.length, 0);
+
+    // Check for already-completed segments (resume support)
+    for (final seg in segments) {
+      final segFile = File(seg.path);
+      final expectedSize = seg.end - seg.start + 1;
+      if (await segFile.exists()) {
+        final fileLen = await segFile.length();
+        if (fileLen == expectedSize) {
+          segmentReceived[seg.index] = expectedSize;
+          seg.completed = true;
+        } else {
+          // Partial or corrupt — delete and re-download
+          await segFile.delete();
+        }
+      }
+    }
+
+    // Update initial progress from completed segments
+    final initialReceived = segmentReceived.reduce((a, b) => a + b);
+    if (initialReceived > 0) {
+      streamProgress.update(initialReceived, totalSize);
+      _updateOverallProgress(task, streamProgress);
+      notifyListeners();
+    }
+
+    // Download remaining segments with concurrency limit
+    final pending = segments.where((s) => !s.completed).toList();
+    Future<void> downloadSegment(_DownloadSegment seg) async {
+      final options = Options(headers: {
+        'Range': 'bytes=${seg.start}-${seg.end}',
+        if (_storage.sessdata != null)
+          'Cookie': 'SESSDATA=${_storage.sessdata}',
+      });
+      await _dio.download(
+        downloadUrl,
+        seg.path,
+        cancelToken: task.cancelToken,
+        deleteOnError: true,
+        options: options,
+        onReceiveProgress: (received, total) {
+          if (!task.cancelToken!.isCancelled) {
+            segmentReceived[seg.index] = received;
+            final totalReceived = segmentReceived.reduce((a, b) => a + b);
+            streamProgress.update(totalReceived, totalSize);
+            _updateOverallProgress(task, streamProgress);
+            _notifyThrottled(task, streamProgress);
+          }
+        },
+      );
+      seg.completed = true;
+    }
+
+    // Use a semaphore-like approach for concurrency control
+    final completer = <Future<void>>[];
+    for (int i = 0; i < pending.length; i++) {
+      if (task.cancelToken!.isCancelled) break;
+      final future = downloadSegment(pending[i]);
+      completer.add(future);
+      if (completer.length >= _maxConcurrent || i == pending.length - 1) {
+        await Future.wait(completer);
+        completer.clear();
+      }
+    }
+
+    if (task.cancelToken!.isCancelled) return;
+
+    // Merge segments into final file
+    final outFile = File(savePath);
+    final sink = outFile.openWrite();
+    try {
+      for (final seg in segments) {
+        final segFile = File(seg.path);
+        await sink.addStream(segFile.openRead());
+      }
+    } finally {
+      await sink.close();
+    }
+
+    // Clean up segment files
+    for (final seg in segments) {
+      try { await File(seg.path).delete(); } catch (_) {}
+    }
+  }
+
+  /// Single-connection download fallback for small files.
+  Future<void> _downloadSingleStream({
     required String url,
     required String savePath,
     required DownloadTask task,
@@ -452,43 +635,58 @@ class DownloadService extends ChangeNotifier {
       savePath,
       cancelToken: task.cancelToken,
       deleteOnError: false,
-      options: resumeFromBytes > 0
-          ? Options(headers: {'Range': 'bytes=$resumeFromBytes-'})
-          : null,
+      options: Options(headers: {
+        if (resumeFromBytes > 0) 'Range': 'bytes=$resumeFromBytes-',
+        if (_storage.sessdata != null)
+          'Cookie': 'SESSDATA=${_storage.sessdata}',
+      }),
       onReceiveProgress: (received, total) {
         if (total > 0 && !task.cancelToken!.isCancelled) {
           final streamTotal =
               resumeFromBytes > 0 ? total + resumeFromBytes : total;
           final streamReceived =
               resumeFromBytes > 0 ? received + resumeFromBytes : received;
-
           streamProgress.update(streamReceived, streamTotal);
-
-          // Overall progress: video progress contributes 0.0-0.5, audio 0.5-1.0
-          if (task.phase == DownloadPhase.downloadingVideo) {
-            task.progress = (streamProgress.progress * 0.5).clamp(0.0, 0.5);
-          } else if (task.phase == DownloadPhase.downloadingAudio) {
-            task.progress = (0.5 + streamProgress.progress * 0.5).clamp(0.5, 0.98);
-          }
-
-          _storage.updateVideoStatus(
-            task.video.bvid,
-            DownloadStatus.downloading,
-            progress: task.progress,
-          );
-          if (streamProgress.speed > 0) {
-            final phaseLabel = task.phase == DownloadPhase.downloadingVideo
-                ? '视频' : '音频';
-            _notificationService.showDownloadProgressNotification(
-              title: task.video.title,
-              progress: (task.progress * 100).round(),
-              status: '$phaseLabel ${streamProgress.formattedSize} ${streamProgress.formattedSpeed}',
-            );
-          }
-          notifyListeners();
+          _updateOverallProgress(task, streamProgress);
+          _notifyThrottled(task, streamProgress);
         }
       },
     );
+  }
+
+  void _updateOverallProgress(DownloadTask task, StreamProgress streamProgress) {
+    if (task.phase == DownloadPhase.downloadingVideo) {
+      task.progress = (streamProgress.progress * 0.5).clamp(0.0, 0.5);
+    } else if (task.phase == DownloadPhase.downloadingAudio) {
+      task.progress = (0.5 + streamProgress.progress * 0.5).clamp(0.5, 0.98);
+    }
+  }
+
+  DateTime? _lastNotifyTime;
+
+  void _notifyThrottled(DownloadTask task, StreamProgress streamProgress) {
+    final now = DateTime.now();
+    if (_lastNotifyTime != null &&
+        now.difference(_lastNotifyTime!).inMilliseconds < 200) {
+      return;
+    }
+    _lastNotifyTime = now;
+
+    _storage.updateVideoStatus(
+      task.video.bvid,
+      DownloadStatus.downloading,
+      progress: task.progress,
+    );
+    if (streamProgress.speed > 0) {
+      final phaseLabel = task.phase == DownloadPhase.downloadingVideo
+          ? '视频' : '音频';
+      _notificationService.showDownloadProgressNotification(
+        title: task.video.title,
+        progress: (task.progress * 100).round(),
+        status: '$phaseLabel ${streamProgress.formattedSize} ${streamProgress.formattedSpeed}',
+      );
+    }
+    notifyListeners();
   }
 
   /// Merge separate video and audio streams into a single MP4.
