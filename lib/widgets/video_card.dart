@@ -141,14 +141,14 @@ class VideoCard extends StatelessWidget {
       actions.add(GestureDetector(
         onTap: onDownload,
         child: SizedBox(
-          width: 16,
-          height: 16,
+          width: 20,
+          height: 20,
           child: video.downloadStatus == DownloadStatus.downloading
               ? _buildMiniProgress(video.downloadProgress)
               : video.downloadStatus == DownloadStatus.paused
                   ? const Icon(CupertinoIcons.pause_circle,
-                      size: 16, color: CupertinoColors.systemOrange)
-                  : const CupertinoActivityIndicator(radius: 8),
+                      size: 20, color: CupertinoColors.systemOrange)
+                  : const CupertinoActivityIndicator(radius: 10),
         ),
       ));
     }
@@ -158,19 +158,19 @@ class VideoCard extends StatelessWidget {
         actions.add(GestureDetector(
           onTap: onPlay,
           child: const Icon(CupertinoIcons.play_circle,
-              size: 18, color: AppTheme.biliPink),
+              size: 20, color: AppTheme.biliPink),
         ));
         actions.add(const SizedBox(width: 4));
       }
       actions.add(const Icon(CupertinoIcons.checkmark_circle_fill,
-          size: 16, color: CupertinoColors.activeGreen));
+          size: 20, color: CupertinoColors.activeGreen));
       if (onDelete != null) {
         actions.add(Padding(
           padding: const EdgeInsets.only(left: 4),
           child: GestureDetector(
             onTap: onDelete,
             child: const Icon(CupertinoIcons.trash,
-                size: 18, color: CupertinoColors.destructiveRed),
+                size: 20, color: CupertinoColors.destructiveRed),
           ),
         ));
       }
@@ -178,7 +178,7 @@ class VideoCard extends StatelessWidget {
 
     if (video.downloadStatus == DownloadStatus.deleted) {
       actions.add(Icon(CupertinoIcons.slash_circle,
-          size: 16,
+          size: 20,
           color:
               CupertinoColors.secondaryLabel.resolveFrom(context)));
       actions.add(const SizedBox(width: 2));
@@ -194,7 +194,7 @@ class VideoCard extends StatelessWidget {
           child: GestureDetector(
             onTap: onRestore,
             child: const Icon(CupertinoIcons.arrow_counterclockwise,
-                size: 18, color: AppTheme.biliPink),
+                size: 20, color: AppTheme.biliPink),
           ),
         ));
       }
@@ -202,7 +202,7 @@ class VideoCard extends StatelessWidget {
 
     if (video.downloadStatus == DownloadStatus.invalidated) {
       actions.add(Icon(CupertinoIcons.exclamationmark_triangle,
-          size: 16,
+          size: 20,
           color: CupertinoColors.systemOrange.resolveFrom(context)));
       actions.add(const SizedBox(width: 2));
       actions.add(Text('已失效',
@@ -216,7 +216,7 @@ class VideoCard extends StatelessWidget {
           child: GestureDetector(
             onTap: onRestore,
             child: const Icon(CupertinoIcons.arrow_counterclockwise,
-                size: 18, color: AppTheme.biliPink),
+                size: 20, color: AppTheme.biliPink),
           ),
         ));
       }
@@ -226,7 +226,7 @@ class VideoCard extends StatelessWidget {
           child: GestureDetector(
             onTap: onDelete,
             child: const Icon(CupertinoIcons.trash,
-                size: 18, color: CupertinoColors.destructiveRed),
+                size: 20, color: CupertinoColors.destructiveRed),
           ),
         ));
       }
@@ -237,7 +237,7 @@ class VideoCard extends StatelessWidget {
 
   Widget _buildMiniProgress(double progress) {
     return CustomPaint(
-      size: const Size(16, 16),
+      size: const Size(20, 20),
       painter: _CircularProgressPainter(
         progress: progress,
         color: AppTheme.biliPink,
