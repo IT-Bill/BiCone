@@ -415,7 +415,13 @@ class _VideoGrid extends StatelessWidget {
                                   .read<StorageService>()
                                   .deleteVideo(video.bvid);
                             }
-                          : null,
+                          : (video.downloadStatus == DownloadStatus.paused ||
+                                  video.downloadStatus == DownloadStatus.failed)
+                              ? () async {
+                                  final dl = context.read<DownloadService>();
+                                  await dl.cancelDownload(video.bvid);
+                                }
+                              : null,
                   onRestore: video.downloadStatus == DownloadStatus.deleted
                       ? () {
                           context

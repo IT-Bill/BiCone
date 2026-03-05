@@ -375,6 +375,16 @@ class DownloadService extends ChangeNotifier {
       );
       notifyListeners();
       _processQueue();
+    } else if (task == null) {
+      // No in-memory task (app was restarted while paused) — re-enqueue
+      final video = _storage.videos.cast<VideoItem?>().firstWhere(
+            (v) => v!.bvid == bvid,
+            orElse: () => null,
+          );
+      if (video != null) {
+        await _cleanPartialFile(bvid);
+        await addDownload(video);
+      }
     }
   }
 
