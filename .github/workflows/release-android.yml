@@ -1,4 +1,4 @@
-name: Android Release (APK)
+name: Android Release
 
 on:
   push:
@@ -26,6 +26,16 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
 
       - name: Flutter pub get
         run: flutter pub get
@@ -44,7 +54,7 @@ jobs:
           EOF
 
       - name: Build split APKs (Release)
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
 
       - name: Rename APKs
         run: |
@@ -52,7 +62,6 @@ jobs:
           APK_DIR="build/app/outputs/flutter-apk"
           mv "$APK_DIR/app-arm64-v8a-release.apk"    "$APK_DIR/BiCone-${VERSION}-arm64-v8a.apk"
           mv "$APK_DIR/app-armeabi-v7a-release.apk"   "$APK_DIR/BiCone-${VERSION}-armeabi-v7a.apk"
-          mv "$APK_DIR/app-x86_64-release.apk"        "$APK_DIR/BiCone-${VERSION}-x86_64.apk"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -60,4 +69,3 @@ jobs:
           files: |
             build/app/outputs/flutter-apk/BiCone-*-arm64-v8a.apk
             build/app/outputs/flutter-apk/BiCone-*-armeabi-v7a.apk
-            build/app/outputs/flutter-apk/BiCone-*-x86_64.apk
