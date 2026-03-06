@@ -248,6 +248,13 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get saveCover =>
+      _settingsBox.get('saveCover', defaultValue: true);
+  Future<void> setSaveCover(bool enabled) async {
+    await _settingsBox.put('saveCover', enabled);
+    notifyListeners();
+  }
+
   bool get hideUndownloaded =>
       _settingsBox.get('hideUndownloaded', defaultValue: false);
   Future<void> setHideUndownloaded(bool enabled) async {

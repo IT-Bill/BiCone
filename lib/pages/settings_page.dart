@@ -132,6 +132,17 @@ class SettingsPage extends StatelessWidget {
                       onTap: () =>
                           _showDownloadPathEditor(context, storage),
                     ),
+                    CupertinoListTile(
+                      title: const Text('保存封面'),
+                      subtitle: const Text(
+                        '将视频封面保存到视频相同目录',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      trailing: CupertinoSwitch(
+                        value: storage.saveCover,
+                        onChanged: (v) => storage.setSaveCover(v),
+                      ),
+                    ),
                   ],
                 ),
 

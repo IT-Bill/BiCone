@@ -51,20 +51,26 @@ class VideoCard extends StatelessWidget {
         children: [
           // ── Thumbnail ──
           if (video.thumbnail.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: CachedNetworkImage(
-                imageUrl: video.thumbnail,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
-                  child: const Center(
-                      child: CupertinoActivityIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
-                  child: const Icon(CupertinoIcons.photo,
-                      size: 32, color: CupertinoColors.systemGrey),
+            GestureDetector(
+              onTap: () => _showImagePreview(context, video.thumbnail),
+              child: Hero(
+                tag: 'cover_${video.bvid}',
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: CachedNetworkImage(
+                    imageUrl: video.thumbnail,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Center(
+                          child: CupertinoActivityIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Icon(CupertinoIcons.photo,
+                          size: 32, color: CupertinoColors.systemGrey),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -436,20 +442,26 @@ class VideoCard extends StatelessWidget {
         children: [
           // ── Thumbnail ──
           if (video.thumbnail.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: CachedNetworkImage(
-                imageUrl: video.thumbnail,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
-                  child: const Center(
-                      child: CupertinoActivityIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: CupertinoColors.systemGrey5.resolveFrom(context),
-                  child: const Icon(CupertinoIcons.photo,
-                      size: 48, color: CupertinoColors.systemGrey),
+            GestureDetector(
+              onTap: () => _showImagePreview(context, video.thumbnail),
+              child: Hero(
+                tag: 'cover_${video.bvid}',
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: CachedNetworkImage(
+                    imageUrl: video.thumbnail,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Center(
+                          child: CupertinoActivityIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Icon(CupertinoIcons.photo,
+                          size: 48, color: CupertinoColors.systemGrey),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -758,6 +770,15 @@ class VideoCard extends StatelessWidget {
     return actions;
   }
 
+  void _showImagePreview(BuildContext context, String imageUrl) {
+    Navigator.of(context, rootNavigator: true).push(
+      _BlurredImageRoute(
+        imageUrl: imageUrl,
+        heroTag: 'cover_${video.bvid}',
+      ),
+    );
+  }
+
   String _formatDate(String dateStr) {
     try {
       // Try ISO 8601 first
@@ -827,4 +848,119 @@ class _CircularProgressPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _CircularProgressPainter old) =>
       old.progress != progress;
+}
+
+class _ImagePreviewPage extends StatefulWidget {
+  final String imageUrl;
+  final String heroTag;
+  const _ImagePreviewPage({required this.imageUrl, required this.heroTag});
+
+  @override
+  State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
+}
+
+class _ImagePreviewPageState extends State<_ImagePreviewPage> {
+  final TransformationController _transformController = TransformationController();
+
+  @override
+  void dispose() {
+    _transformController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // Only dismiss if not zoomed in
+        if (_transformController.value.isIdentity()) {
+          Navigator.pop(context);
+        } else {
+          // Reset zoom
+          _transformController.value = Matrix4.identity();
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox.expand(
+        child: InteractiveViewer(
+          transformationController: _transformController,
+          minScale: 1.0,
+          maxScale: 4.0,
+          child: Center(
+            child: Hero(
+              tag: widget.heroTag,
+              child: CachedNetworkImage(
+                imageUrl: widget.imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const CupertinoActivityIndicator(
+                  color: CupertinoColors.white,
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  CupertinoIcons.photo,
+                  size: 64,
+                  color: CupertinoColors.systemGrey,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BlurredImageRoute extends PageRoute<void> {
+  final String imageUrl;
+  final String heroTag;
+
+  _BlurredImageRoute({required this.imageUrl, required this.heroTag});
+
+  @override
+  bool get opaque => false;
+
+  @override
+  bool get barrierDismissible => true;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  Color get barrierColor => CupertinoColors.black.withOpacity(0.001);
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 250);
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Container(
+          color: CupertinoColors.black.withOpacity(animation.value),
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return _ImagePreviewPage(imageUrl: imageUrl, heroTag: heroTag);
+  }
 }

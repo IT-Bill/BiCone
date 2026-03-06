@@ -163,12 +163,15 @@ class DownloadService extends ChangeNotifier {
     _dio.options.headers['Referer'] = 'https://www.bilibili.com';
   }
 
-  Future<String> get _downloadDir async {
+  Future<String> _downloadDir({int? authorMid}) async {
     final dirPath = _storage.downloadPath;
     if (dirPath.isEmpty) {
       throw Exception('下载路径未设置，请先在设置中选择下载路径');
     }
-    final downloadDir = Directory(dirPath);
+    final basePath = authorMid != null && authorMid > 0
+        ? '$dirPath/$authorMid'
+        : dirPath;
+    final downloadDir = Directory(basePath);
     if (!await downloadDir.exists()) {
       await downloadDir.create(recursive: true);
     }
@@ -176,7 +179,7 @@ class DownloadService extends ChangeNotifier {
   }
 
   /// On iOS, use tmp/ for intermediate .m4s files to reduce persistent storage.
-  Future<String> get _tempDownloadDir async {
+  Future<String> _tempDownloadDir({int? authorMid}) async {
     if (Platform.isIOS) {
       final tmpDir = Directory('${Directory.systemTemp.path}/bicone_dl');
       if (!await tmpDir.exists()) {
@@ -184,7 +187,7 @@ class DownloadService extends ChangeNotifier {
       }
       return tmpDir.path;
     }
-    return _downloadDir;
+    return _downloadDir(authorMid: authorMid);
   }
 
   Future<void> addDownload(VideoItem video) async {
@@ -249,8 +252,8 @@ class DownloadService extends ChangeNotifier {
       if (streams == null) throw Exception('获取下载地址失败');
 
       // 3. Prepare paths
-      final dir = await _downloadDir;
-      final tmpDir = await _tempDownloadDir;
+      final dir = await _downloadDir(authorMid: task.video.authorMid);
+      final tmpDir = await _tempDownloadDir(authorMid: task.video.authorMid);
       debugPrint('Download: saving to $dir (temp: $tmpDir)');
       final sanitized =
           task.video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
@@ -320,6 +323,23 @@ class DownloadService extends ChangeNotifier {
       // 7. Clean up temp files
       try { await File(videoPath).delete(); } catch (_) {}
       try { await File(audioPath).delete(); } catch (_) {}
+
+      // 7.5. Download cover image if enabled
+      if (_storage.saveCover && task.video.thumbnail.isNotEmpty) {
+        try {
+          final coverUrl = task.video.thumbnail;
+          final coverExt = coverUrl.contains('.png') ? '.png' : '.jpg';
+          final coverPath = '$dir/$sanitized$coverExt';
+          await _dio.download(
+            coverUrl,
+            coverPath,
+            cancelToken: task.cancelToken,
+          );
+          debugPrint('Cover saved: $coverPath');
+        } catch (e) {
+          debugPrint('Cover download failed (non-fatal): $e');
+        }
+      }
 
       // 8. Done
       task.status = DownloadStatus.completed;
@@ -467,8 +487,8 @@ class DownloadService extends ChangeNotifier {
           );
       if (video == null) return;
 
-      final dir = await _downloadDir;
-      final tmpDir = await _tempDownloadDir;
+      final dir = await _downloadDir(authorMid: video.authorMid);
+      final tmpDir = await _tempDownloadDir(authorMid: video.authorMid);
       final sanitized =
           video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 
@@ -492,8 +512,8 @@ class DownloadService extends ChangeNotifier {
         }
       }
 
-      // Clean final output from download dir
-      for (final ext in ['.mp4', '.flv']) {
+      // Clean final output and cover from download dir
+      for (final ext in ['.mp4', '.flv', '.jpg', '.png']) {
         final file = File('$dir/$sanitized$ext');
         if (await file.exists()) {
           await file.delete();
