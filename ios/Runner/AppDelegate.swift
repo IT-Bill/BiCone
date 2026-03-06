@@ -7,9 +7,15 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    if let controller = window?.rootViewController as? FlutterViewController {
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MediaMuxerPlugin") {
       let channel = FlutterMethodChannel(name: "cn.itbill.bicone/media_muxer",
-                                         binaryMessenger: controller.binaryMessenger)
+                                         binaryMessenger: registrar.messenger())
       channel.setMethodCallHandler { (call, result) in
         if call.method == "mergeStreams" {
           guard let args = call.arguments as? [String: Any],
@@ -33,10 +39,5 @@ import UIKit
         }
       }
     }
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }
