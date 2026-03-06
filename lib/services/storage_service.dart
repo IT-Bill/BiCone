@@ -31,8 +31,9 @@ class StorageService extends ChangeNotifier {
     _loadSubscriptions();
     _loadVideos();
 
-    // On iOS, auto-set download path to app's Documents directory
-    if (!kIsWeb && Platform.isIOS && downloadPath.isEmpty) {
+    // On iOS, always re-derive download path from current container
+    // (sideload updates can change the app's sandbox UUID)
+    if (!kIsWeb && Platform.isIOS) {
       final docs = await getApplicationDocumentsDirectory();
       final dlDir = Directory('${docs.path}/Downloads');
       if (!await dlDir.exists()) await dlDir.create(recursive: true);
