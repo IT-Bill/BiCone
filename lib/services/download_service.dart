@@ -756,7 +756,7 @@ class DownloadService extends ChangeNotifier {
   /// Merge separate video and audio streams into a single MP4.
   Future<void> _mergeStreams(
       String videoPath, String audioPath, String outputPath) async {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       try {
         await _mediaMuxerChannel.invokeMethod('mergeStreams', {
           'videoPath': videoPath,
@@ -764,7 +764,7 @@ class DownloadService extends ChangeNotifier {
           'outputPath': outputPath,
         });
       } on PlatformException catch (e) {
-        throw Exception('MediaMuxer合并失败: ${e.message}');
+        throw Exception('合并失败: ${e.message}');
       }
     } else {
       // Windows / Linux: use system ffmpeg
