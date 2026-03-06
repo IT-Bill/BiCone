@@ -78,7 +78,7 @@ class VideoCard extends StatelessWidget {
               children: [
                 // ── Title (fixed 2-line height) ──
                 SizedBox(
-                  height: 12 * 2.8,
+                  height: 12 * 2 * 1.4,
                   child: Text(
                     video.title,
                     maxLines: 2,
@@ -86,6 +86,7 @@ class VideoCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
+                      height: 1.4,
                     ),
                   ),
                 ),

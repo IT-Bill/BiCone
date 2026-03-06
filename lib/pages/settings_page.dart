@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -335,6 +336,27 @@ class SettingsPage extends StatelessWidget {
 
   void _showDownloadPathEditor(
       BuildContext context, StorageService storage) async {
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('下载路径'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'iOS 下载路径固定在应用沙盒内：\n${storage.downloadPath}\n\n可通过「文件」App 访问下载的视频。',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final result = await FilePicker.platform.getDirectoryPath(
       dialogTitle: '选择下载路径',
       initialDirectory: storage.downloadPath.isNotEmpty
