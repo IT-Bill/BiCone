@@ -22,12 +22,6 @@ class NotificationService {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
     final windowsSettings = WindowsInitializationSettings(
       appName: 'BiCone',
       appUserModelId: 'cn.itbill.bicone',
@@ -36,7 +30,6 @@ class NotificationService {
 
     final initSettings = InitializationSettings(
       android: androidSettings,
-      iOS: darwinSettings,
       windows: windowsSettings,
     );
 
@@ -72,16 +65,7 @@ class NotificationService {
       priority: Priority.high,
     );
 
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-    );
+    const details = NotificationDetails(android: androidDetails);
 
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -113,15 +97,7 @@ class NotificationService {
       progress: progress,
     );
 
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentSound: false,
-    );
-
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-    );
+    final details = NotificationDetails(android: androidDetails);
 
     await _plugin.show(
       id: _downloadProgressId,
@@ -148,16 +124,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
     );
 
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-    );
+    const details = NotificationDetails(android: androidDetails);
 
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
