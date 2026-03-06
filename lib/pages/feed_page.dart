@@ -522,17 +522,8 @@ class _VideoGrid extends StatelessWidget {
               isDestructiveAction: true,
               onPressed: () async {
                 Navigator.pop(ctx);
-                if (video.localPath != null) {
-                  try {
-                    final file = File(video.localPath!);
-                    if (await file.exists()) {
-                      await file.delete();
-                    }
-                  } catch (e) {
-                    debugPrint('Error deleting file: $e');
-                  }
-                }
                 if (context.mounted) {
+                  await context.read<DownloadService>().deleteVideoFiles(video);
                   context.read<StorageService>().deleteVideo(video.bvid);
                 }
               },
@@ -558,17 +549,8 @@ class _VideoGrid extends StatelessWidget {
               isDestructiveAction: true,
               onPressed: () async {
                 Navigator.pop(ctx);
-                if (video.localPath != null) {
-                  try {
-                    final file = File(video.localPath!);
-                    if (await file.exists()) {
-                      await file.delete();
-                    }
-                  } catch (e) {
-                    debugPrint('Error deleting file: $e');
-                  }
-                }
                 if (context.mounted) {
+                  await context.read<DownloadService>().deleteVideoFiles(video);
                   context.read<StorageService>().deleteVideo(video.bvid);
                 }
               },

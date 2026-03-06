@@ -859,22 +859,61 @@ class DownloadService extends ChangeNotifier {
         _tasks.remove(task);
       }
 
-      // Delete local file if it exists
-      if (video.localPath != null && video.localPath!.isNotEmpty) {
-        try {
-          final file = File(video.localPath!);
-          if (await file.exists()) {
-            await file.delete();
-            debugPrint('Deleted file: ${file.path}');
-          }
-        } catch (e) {
-          debugPrint('Error deleting file for ${video.bvid}: $e');
+      await deleteVideoFiles(video);
+    }
+    notifyListeners();
+  }
+
+  /// Delete video file, cover images, and clean up empty UID folder.
+  Future<void> deleteVideoFiles(VideoItem video) async {
+    // Delete local video file
+    if (video.localPath != null && video.localPath!.isNotEmpty) {
+      try {
+        final file = File(video.localPath!);
+        if (await file.exists()) {
+          await file.delete();
+          debugPrint('Deleted file: ${file.path}');
+        }
+      } catch (e) {
+        debugPrint('Error deleting file for ${video.bvid}: $e');
+      }
+    }
+
+    // Delete cover images
+    try {
+      final dir = await _downloadDir(authorMid: video.authorMid);
+      final sanitized =
+          video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      for (final ext in ['.jpg', '.png']) {
+        final coverFile = File('$dir/$sanitized$ext');
+        if (await coverFile.exists()) {
+          await coverFile.delete();
+          debugPrint('Deleted cover: ${coverFile.path}');
         }
       }
 
-      // Also clean partial file
-      await _cleanPartialFile(video.bvid);
+      // Clean up empty UID folder
+      await _cleanEmptyUidFolder(dir);
+    } catch (e) {
+      debugPrint('Error deleting cover for ${video.bvid}: $e');
     }
-    notifyListeners();
+
+    // Also clean partial files
+    await _cleanPartialFile(video.bvid);
+  }
+
+  /// Remove the UID directory if empty.
+  Future<void> _cleanEmptyUidFolder(String dirPath) async {
+    try {
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) return;
+      final entries = await dir.list().toList();
+      if (entries.isEmpty) {
+        await dir.delete();
+        debugPrint('Removed empty UID folder: $dirPath');
+      }
+    } catch (e) {
+      debugPrint('Error cleaning UID folder: $e');
+    }
   }
 }
