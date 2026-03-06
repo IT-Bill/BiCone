@@ -67,6 +67,7 @@ class MonitorService extends ChangeNotifier {
     final subscriptions = _storage.subscriptions;
 
     for (final sub in subscriptions) {
+      if (sub.paused) continue;
       try {
         final videos = await rssService.getLatestVideos(sub.mid);
 
@@ -84,9 +85,9 @@ class MonitorService extends ChangeNotifier {
           _newVideoCount++;
 
           // Auto-download only videos published after the subscription was added
-          // and only if a download path has been set
+          // and only if a download path has been set and downloads not paused
           final willAutoDownload =
-              _storage.autoDownload && _storage.downloadPath.isNotEmpty;
+              _storage.autoDownload && _storage.downloadPath.isNotEmpty && !sub.downloadPaused;
           bool didStartDownload = false;
           if (willAutoDownload) {
             final videoPubDate = _parseDate(video.pubDate);

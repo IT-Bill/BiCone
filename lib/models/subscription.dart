@@ -4,12 +4,16 @@ class Subscription {
   final String face;
   final String sign;
   final DateTime addedAt;
+  final bool paused;
+  final bool downloadPaused;
 
   Subscription({
     required this.mid,
     required this.name,
     required this.face,
     this.sign = '',
+    this.paused = false,
+    this.downloadPaused = false,
     DateTime? addedAt,
   }) : addedAt = addedAt ?? DateTime.now();
 
@@ -19,6 +23,8 @@ class Subscription {
       name: json['name'] ?? '',
       face: json['face'] ?? '',
       sign: json['sign'] ?? '',
+      paused: json['paused'] ?? false,
+      downloadPaused: json['downloadPaused'] ?? false,
       addedAt: json['addedAt'] != null
           ? DateTime.parse(json['addedAt'])
           : DateTime.now(),
@@ -30,6 +36,8 @@ class Subscription {
         'name': name,
         'face': face,
         'sign': sign,
+        'paused': paused,
+        'downloadPaused': downloadPaused,
         'addedAt': addedAt.toIso8601String(),
       };
 }

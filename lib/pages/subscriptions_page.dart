@@ -71,8 +71,8 @@ class SubscriptionsPage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: SubscriptionCard(
                     subscription: sub,
-                    onDelete: () =>
-                        _confirmDelete(context, storage, sub),
+                    onMore: () =>
+                        _showSubscriptionMenu(context, storage, sub),
                   ),
                 );
               },
@@ -257,13 +257,96 @@ class SubscriptionsPage extends StatelessWidget {
     );
   }
 
+  void _showSubscriptionMenu(
+      BuildContext context, StorageService storage, Subscription sub) {
+    // Determine current pause status text
+    String pauseStatus = '';
+    if (sub.paused) {
+      pauseStatus = '（当前：完全暂停）';
+    } else if (sub.downloadPaused) {
+      pauseStatus = '（当前：仅暂停下载）';
+    }
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: Text(sub.name),
+        message: pauseStatus.isNotEmpty ? Text(pauseStatus) : null,
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showPauseMenu(context, storage, sub);
+            },
+            child: const Text('暂停/恢复 ▸'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDelete(context, storage, sub);
+            },
+            isDestructiveAction: true,
+            child: const Text('取消订阅 ▸'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
+  void _showPauseMenu(
+      BuildContext context, StorageService storage, Subscription sub) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: Text('暂停选项 - ${sub.name}'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
+              storage.toggleDownloadPause(sub.mid);
+            },
+            child: Text(
+              sub.downloadPaused
+                  ? '恢复自动下载'
+                  : '暂停自动下载（继续获取视频）',
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
+              storage.toggleSubscriptionPause(sub.mid);
+            },
+            child: Text(
+              sub.paused
+                  ? '恢复订阅'
+                  : '完全暂停（不获取视频）',
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
   void _confirmDelete(
       BuildContext context, StorageService storage, Subscription sub) {
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => CupertinoActionSheet(
         title: Text('取消订阅 ${sub.name}'),
-        message: const Text('请选择取消订阅后的处理方式'),
+        message: const Text(
+          '请选择取消订阅后的处理方式\n\n'
+          '· 仅取消订阅：保留已获取的动态和已下载的视频文件\n'
+          '· 取消订阅并清除动态：移除该UP的所有动态记录，保留已下载文件\n'
+          '· 取消订阅并删除所有：移除动态记录并删除已下载的视频文件',
+        ),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () {

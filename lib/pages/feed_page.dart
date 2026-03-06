@@ -509,9 +509,9 @@ class _VideoGrid extends StatelessWidget {
       showCupertinoDialog(
         context: context,
         builder: (ctx) => CupertinoAlertDialog(
-          title: const Text('视频已失效'),
+          title: const Text('视频可能已失效'),
           content: Text(
-            '「${video.title}」\n在源站已失效，删除后可能无法再次下载。\n确定要删除吗？',
+            '「${video.title}」\n\n未在源站中找到，可能已失效，删除后可能无法再次下载。\n如视频仍有效，删除后可重新下载。\n确定要删除吗？',
           ),
           actions: [
             CupertinoDialogAction(

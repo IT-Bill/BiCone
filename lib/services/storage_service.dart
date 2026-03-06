@@ -99,6 +99,32 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleSubscriptionPause(int mid) async {
+    final data = _subsBox.get(mid.toString());
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      final wasPaused = map['paused'] ?? false;
+      map['paused'] = !wasPaused;
+      map['downloadPaused'] = false; // mutual exclusion
+      await _subsBox.put(mid.toString(), map);
+      _loadSubscriptions();
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleDownloadPause(int mid) async {
+    final data = _subsBox.get(mid.toString());
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      final wasDlPaused = map['downloadPaused'] ?? false;
+      map['downloadPaused'] = !wasDlPaused;
+      map['paused'] = false; // mutual exclusion
+      await _subsBox.put(mid.toString(), map);
+      _loadSubscriptions();
+      notifyListeners();
+    }
+  }
+
   /// Remove all video records for a given UP主 (by mid).
   /// Returns the list of removed videos for potential file cleanup.
   Future<List<VideoItem>> removeVideosByAuthor(int mid) async {

@@ -4,12 +4,12 @@ import '../models/subscription.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
-  final VoidCallback? onDelete;
+  final VoidCallback? onMore;
 
   const SubscriptionCard({
     super.key,
     required this.subscription,
-    this.onDelete,
+    this.onMore,
   });
 
   @override
@@ -87,7 +87,27 @@ class SubscriptionCard extends StatelessWidget {
                         .resolveFrom(context),
                   ),
                 ),
-                if (subscription.sign.isNotEmpty) ...[
+                if (subscription.paused) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '已暂停',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemOrange
+                          .resolveFrom(context),
+                    ),
+                  ),
+                ] else if (subscription.downloadPaused) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '已暂停下载',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemOrange
+                          .resolveFrom(context),
+                    ),
+                  ),
+                ] else if (subscription.sign.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     subscription.sign,
@@ -104,16 +124,16 @@ class SubscriptionCard extends StatelessWidget {
             ),
           ),
 
-          // ── Delete ──
-          if (onDelete != null)
+          // ── More ──
+          if (onMore != null)
             CupertinoButton(
               padding: EdgeInsets.zero,
               minSize: 32,
-              onPressed: onDelete,
-              child: const Icon(
-                CupertinoIcons.trash,
+              onPressed: onMore,
+              child: Icon(
+                CupertinoIcons.ellipsis,
                 size: 20,
-                color: CupertinoColors.destructiveRed,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
               ),
             ),
         ],
