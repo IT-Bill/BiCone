@@ -175,6 +175,18 @@ class DownloadService extends ChangeNotifier {
     return downloadDir.path;
   }
 
+  /// On iOS, use tmp/ for intermediate .m4s files to reduce persistent storage.
+  Future<String> get _tempDownloadDir async {
+    if (Platform.isIOS) {
+      final tmpDir = Directory('${Directory.systemTemp.path}/bicone_dl');
+      if (!await tmpDir.exists()) {
+        await tmpDir.create(recursive: true);
+      }
+      return tmpDir.path;
+    }
+    return _downloadDir;
+  }
+
   Future<void> addDownload(VideoItem video) async {
     // Remove any existing failed/completed task so it can be retried
     _tasks.removeWhere((t) =>
@@ -238,11 +250,12 @@ class DownloadService extends ChangeNotifier {
 
       // 3. Prepare paths
       final dir = await _downloadDir;
-      debugPrint('Download: saving to $dir');
+      final tmpDir = await _tempDownloadDir;
+      debugPrint('Download: saving to $dir (temp: $tmpDir)');
       final sanitized =
           task.video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final videoPath = '$dir/$sanitized.video.m4s';
-      final audioPath = '$dir/$sanitized.audio.m4s';
+      final videoPath = '$tmpDir/$sanitized.video.m4s';
+      final audioPath = '$tmpDir/$sanitized.audio.m4s';
       final outputPath = '$dir/$sanitized.mp4';
 
       // 4. Download video stream (skip if already completed)
@@ -455,23 +468,36 @@ class DownloadService extends ChangeNotifier {
       if (video == null) return;
 
       final dir = await _downloadDir;
+      final tmpDir = await _tempDownloadDir;
       final sanitized =
           video.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      for (final ext in ['.mp4', '.flv', '.video.m4s', '.audio.m4s']) {
+
+      // Clean .m4s intermediates from both temp and download dirs
+      for (final searchDir in {dir, tmpDir}) {
+        for (final ext in ['.video.m4s', '.audio.m4s']) {
+          final file = File('$searchDir/$sanitized$ext');
+          if (await file.exists()) {
+            await file.delete();
+            debugPrint('Cleaned partial file: ${file.path}');
+          }
+          for (int i = 0; i < 100; i++) {
+            final segFile = File('$searchDir/$sanitized$ext.seg$i');
+            if (await segFile.exists()) {
+              await segFile.delete();
+              debugPrint('Cleaned segment file: ${segFile.path}');
+            } else {
+              break;
+            }
+          }
+        }
+      }
+
+      // Clean final output from download dir
+      for (final ext in ['.mp4', '.flv']) {
         final file = File('$dir/$sanitized$ext');
         if (await file.exists()) {
           await file.delete();
           debugPrint('Cleaned partial file: ${file.path}');
-        }
-        // Clean segment files (.seg0, .seg1, ...)
-        for (int i = 0; i < 100; i++) {
-          final segFile = File('$dir/$sanitized$ext.seg$i');
-          if (await segFile.exists()) {
-            await segFile.delete();
-            debugPrint('Cleaned segment file: ${segFile.path}');
-          } else {
-            break; // No more segments
-          }
         }
       }
     } catch (e) {
