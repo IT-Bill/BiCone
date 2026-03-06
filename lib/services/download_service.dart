@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:dio/dio.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../models/video_item.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
@@ -751,10 +750,24 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const _mediaMuxerChannel =
+      MethodChannel('cn.itbill.bicone/media_muxer');
+
   /// Merge separate video and audio streams into a single MP4.
   Future<void> _mergeStreams(
       String videoPath, String audioPath, String outputPath) async {
-    if (Platform.isWindows || Platform.isLinux) {
+    if (Platform.isAndroid) {
+      try {
+        await _mediaMuxerChannel.invokeMethod('mergeStreams', {
+          'videoPath': videoPath,
+          'audioPath': audioPath,
+          'outputPath': outputPath,
+        });
+      } on PlatformException catch (e) {
+        throw Exception('MediaMuxer合并失败: ${e.message}');
+      }
+    } else {
+      // Windows / Linux: use system ffmpeg
       final result = await Process.run('ffmpeg', [
         '-i', videoPath,
         '-i', audioPath,
@@ -764,14 +777,6 @@ class DownloadService extends ChangeNotifier {
       ]);
       if (result.exitCode != 0) {
         throw Exception('FFmpeg合并失败: ${result.stderr}');
-      }
-    } else {
-      final session = await FFmpegKit.execute(
-          '-i "$videoPath" -i "$audioPath" -c copy -y "$outputPath"');
-      final returnCode = await session.getReturnCode();
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final output = await session.getOutput();
-        throw Exception('FFmpeg合并失败: $output');
       }
     }
   }
