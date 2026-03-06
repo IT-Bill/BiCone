@@ -1,5 +1,7 @@
+import 'dart:io' show Directory, Platform;
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/subscription.dart';
 import '../models/video_item.dart';
 
@@ -28,6 +30,14 @@ class StorageService extends ChangeNotifier {
     _settingsBox = await Hive.openBox(_settingsBoxName);
     _loadSubscriptions();
     _loadVideos();
+
+    // On iOS, auto-set download path to app's Documents directory
+    if (!kIsWeb && Platform.isIOS && downloadPath.isEmpty) {
+      final docs = await getApplicationDocumentsDirectory();
+      final dlDir = Directory('${docs.path}/Downloads');
+      if (!await dlDir.exists()) await dlDir.create(recursive: true);
+      await setDownloadPath(dlDir.path);
+    }
   }
 
   // ─── Auth ──────────────────────────────────────────────

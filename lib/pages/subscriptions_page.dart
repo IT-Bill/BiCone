@@ -1,5 +1,7 @@
+import 'dart:io' show Directory, Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
@@ -104,14 +106,21 @@ class SubscriptionsPage extends StatelessWidget {
                 isDefaultAction: true,
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  final result = await FilePicker.platform.getDirectoryPath(
-                    dialogTitle: '选择下载路径',
-                  );
-                  if (result != null) {
-                    storage.setDownloadPath(result);
-                    if (context.mounted) {
-                      _showAddUPDialog(context);
+                  if (Platform.isIOS) {
+                    final docs = await getApplicationDocumentsDirectory();
+                    final dlDir = Directory('${docs.path}/Downloads');
+                    if (!await dlDir.exists()) await dlDir.create(recursive: true);
+                    storage.setDownloadPath(dlDir.path);
+                  } else {
+                    final result = await FilePicker.platform.getDirectoryPath(
+                      dialogTitle: '选择下载路径',
+                    );
+                    if (result != null) {
+                      storage.setDownloadPath(result);
                     }
+                  }
+                  if (context.mounted) {
+                    _showAddUPDialog(context);
                   }
                 },
                 child: const Text('去设置'),

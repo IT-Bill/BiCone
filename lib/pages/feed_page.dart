@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/video_item.dart';
 import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
@@ -111,6 +112,15 @@ class _FeedPageState extends State<FeedPage> {
   Future<bool> _ensureDownloadPath() async {
     final storage = context.read<StorageService>();
     if (storage.downloadPath.isNotEmpty) return true;
+
+    // iOS: auto-set to app's Documents directory
+    if (Platform.isIOS) {
+      final docs = await getApplicationDocumentsDirectory();
+      final dlDir = Directory('${docs.path}/Downloads');
+      if (!await dlDir.exists()) await dlDir.create(recursive: true);
+      storage.setDownloadPath(dlDir.path);
+      return true;
+    }
 
     // First time: must set download path before downloading
     final confirmed = await showCupertinoDialog<bool>(
