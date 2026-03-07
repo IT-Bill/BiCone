@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -69,47 +67,12 @@ jobs:
         run: |
           echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
           echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-          echo "REPO=${GITHUB_REPOSITORY}" >> $GITHUB_ENV
 
-      - name: Generate release notes
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          GH_URL="https://github.com/${REPO}/releases/download/${TAG}"
-          GE_URL="https://gitee.com/IT-Bill/BiCone/releases/download/${TAG}"
-          cat > release_notes.md <<EOF
-          ## 下载说明
-
-          - **Android（推荐大多数手机）**：arm64-v8a
-            GitHub: [BiCone-${VERSION}-arm64-v8a.apk](${GH_URL}/BiCone-${VERSION}-arm64-v8a.apk)
-            国内推荐: [BiCone-${VERSION}-arm64-v8a.apk](${GE_URL}/BiCone-${VERSION}-arm64-v8a.apk)
-
-          - **Android（较老 32 位设备）**：armeabi-v7a
-            GitHub: [BiCone-${VERSION}-armeabi-v7a.apk](${GH_URL}/BiCone-${VERSION}-armeabi-v7a.apk)
-            国内推荐: [BiCone-${VERSION}-armeabi-v7a.apk](${GE_URL}/BiCone-${VERSION}-armeabi-v7a.apk)
-
-          - **Windows x64 安装版**：
-            GitHub: [BiCone-${VERSION}-windows-x64-setup.exe](${GH_URL}/BiCone-${VERSION}-windows-x64-setup.exe)
-            国内推荐: [BiCone-${VERSION}-windows-x64-setup.exe](${GE_URL}/BiCone-${VERSION}-windows-x64-setup.exe)
-
-          - **Windows x64 便携版**：
-            GitHub: [BiCone-${VERSION}-windows-x64.zip](${GH_URL}/BiCone-${VERSION}-windows-x64.zip)
-            国内推荐: [BiCone-${VERSION}-windows-x64.zip](${GE_URL}/BiCone-${VERSION}-windows-x64.zip)
-
-          ---
-
-          ### 更新内容
-          EOF
-
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${TAG}$" | head -n 1 || true)
-          if [ -n "$PREV_TAG" ]; then
-            git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" >> release_notes.md
-          else
-            git log -n 30 --pretty=format:"- %s (%h)" >> release_notes.md
-          fi
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release_notes.md
-          files: |
-            build/app/outputs/flutter-apk/BiCone-${{ env.VERSION }}-arm64-v8a.apk
-            build/app/outputs/flutter-apk/BiCone-${{ env.VERSION }}-armeabi-v7a.apk
+          gh release upload "$TAG" \
+            "build/app/outputs/flutter-apk/BiCone-${VERSION}-arm64-v8a.apk" \
+            "build/app/outputs/flutter-apk/BiCone-${VERSION}-armeabi-v7a.apk" \
+            --repo "$GITHUB_REPOSITORY" --clobber

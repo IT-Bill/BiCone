@@ -16,6 +16,8 @@ workflows:
 
     environment:
       flutter: stable
+      groups:
+        - github_credentials
     scripts:
       - name: Get Flutter packages
         script: |
@@ -31,10 +33,19 @@ workflows:
           cd build/ios/iphoneos
           mkdir Payload
           mv Runner.app Payload/
-          zip -r bicone_unsigned.ipa Payload
+          VERSION=$(echo "$CM_TAG" | sed 's/^v//')
+          zip -r "BiCone-${VERSION}-unsigned.ipa" Payload
     artifacts:
-      - build/ios/iphoneos/bicone_unsigned.ipa
+      - build/ios/iphoneos/BiCone-*-unsigned.ipa
       - /tmp/xcodebuild_logs/*.log
+    publishing:
+      scripts:
+        - name: Upload IPA to GitHub Release
+          script: |
+            TAG="$CM_TAG"
+            VERSION=$(echo "$TAG" | sed 's/^v//')
+            IPA="build/ios/iphoneos/BiCone-${VERSION}-unsigned.ipa"
+            gh release upload "$TAG" "$IPA" --repo IT-Bill/BiCone --clobber
     cache:
       cache_paths:
         - $HOME/.pub-cache

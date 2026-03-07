@@ -42,9 +42,14 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart("v")
           iscc /DMyAppVersion=$version installer\windows\setup.iss
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            BiCone-*-windows-x64.zip
-            installer/windows/BiCone-*-windows-x64-setup.exe
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $tag = "${{ github.ref_name }}"
+          gh release upload $tag `
+            "BiCone-${version}-windows-x64.zip" `
+            "installer/windows/BiCone-${version}-windows-x64-setup.exe" `
+            --repo ${{ github.repository }} --clobber
