@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/error_report_utils.dart';
 import '../theme.dart';
 import 'home_page.dart';
 
@@ -228,6 +229,19 @@ class _LoginPageState extends State<LoginPage> {
                     Text('重新生成'),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  final auth = context.read<AuthService>();
+                  reportErrorToSentry(
+                    context,
+                    auth.errorMessage ?? '登录错误',
+                    detail: '登录二维码生成失败',
+                  );
+                },
+                child: const Text('反馈', style: TextStyle(fontSize: 14)),
               ),
             ],
           ),

@@ -256,16 +256,6 @@ class VideoCard extends StatelessWidget {
           ),
         ));
       }
-      if (onDelete != null) {
-        actions.add(Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: GestureDetector(
-            onTap: onDelete,
-            child: const Icon(CupertinoIcons.trash,
-                size: 20, color: CupertinoColors.destructiveRed),
-          ),
-        ));
-      }
     }
 
     return actions;
@@ -750,18 +740,6 @@ class VideoCard extends StatelessWidget {
             onPressed: onRestore,
             child: const Icon(CupertinoIcons.arrow_counterclockwise,
                 size: 20, color: AppTheme.biliPink),
-          ),
-        ));
-      }
-      if (onDelete != null) {
-        actions.add(Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            minSize: 28,
-            onPressed: onDelete,
-            child: const Icon(CupertinoIcons.trash,
-                size: 20, color: CupertinoColors.destructiveRed),
           ),
         ));
       }

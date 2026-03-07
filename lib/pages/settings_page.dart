@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/monitor_service.dart';
 import 'login_page.dart';
+import 'feedback_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -150,6 +151,19 @@ class SettingsPage extends StatelessWidget {
                 CupertinoListSection.insetGrouped(
                   header: const Text('关于'),
                   children: [
+                    CupertinoListTile(
+                      leading: const Icon(CupertinoIcons.chat_bubble_text,
+                          color: CupertinoColors.activeBlue),
+                      title: const Text('意见反馈'),
+                      trailing: const CupertinoListTileChevron(),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder: (_) => const FeedbackPage(),
+                          ),
+                        );
+                      },
+                    ),
                     const CupertinoListTile(
                       leading: Icon(CupertinoIcons.paw),
                       title: Text('BiCone'),

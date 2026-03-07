@@ -7,6 +7,7 @@ import 'services/api_service.dart';
 import 'services/download_service.dart';
 import 'services/monitor_service.dart';
 import 'services/notification_service.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +30,11 @@ void main() async {
   // Try to restore a previous session
   await auth.tryRestoreLogin();
 
-  runApp(
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://538393aafe3a2efdc95b9e3e4467146b@o4511002658930688.ingest.de.sentry.io/4511002691567696';
+    },
+    appRunner: () => runApp(SentryWidget(child: 
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: storage),
@@ -40,5 +45,6 @@ void main() async {
       ],
       child: const BiConeApp(),
     ),
+  )),
   );
 }

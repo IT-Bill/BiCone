@@ -25,7 +25,7 @@ jobs:
             const repo = context.repo.repo;
             const headSha = context.payload.workflow_run.head_sha;
 
-            const workflowFiles = ['release-android.yml', 'release-windows.yml'];
+            const workflowFiles = ['prepare-release.yml', 'release-android.yml', 'release-windows.yml'];
             for (const file of workflowFiles) {
               const { data: { workflow_runs: runs } } = await github.rest.actions.listWorkflowRuns({
                 owner, repo,
@@ -41,6 +41,25 @@ jobs:
             }
             core.exportVariable('ALL_DONE', 'true');
             core.exportVariable('RELEASE_TAG', context.payload.workflow_run.head_branch);
+
+      - name: Wait for IPA on GitHub Release
+        if: env.ALL_DONE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${RELEASE_TAG}"
+          VERSION="${TAG#v}"
+          IPA_NAME="BiCone-${VERSION}-unsigned.ipa"
+          echo "Waiting for ${IPA_NAME} on release ${TAG}..."
+          for i in $(seq 1 10); do
+            if gh release view "$TAG" --json assets -q ".assets[].name" | grep -q "$IPA_NAME"; then
+              echo "IPA found on release!"
+              exit 0
+            fi
+            echo "IPA not found yet, retrying in 30s... ($i/10)"
+            sleep 30
+          done
+          echo "Warning: IPA not found after 5 minutes, syncing without it"
 
       - name: Sync GitHub Release to Gitee
         if: env.ALL_DONE == 'true'

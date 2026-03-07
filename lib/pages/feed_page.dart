@@ -9,6 +9,7 @@ import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
 import '../services/download_service.dart';
 import '../services/rss_service.dart';
+import '../services/error_report_utils.dart';
 import '../widgets/video_card.dart';
 
 class FeedPage extends StatefulWidget {
@@ -20,7 +21,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   bool _showDeleted = true;
-  bool _showInvalidated = false;
+  bool _showInvalidated = true;
   int _selectedUpMid = 0; // 0 = all
 
   @override
@@ -64,6 +65,13 @@ class _FeedPageState extends State<FeedPage> {
               CupertinoDialogAction(
                 onPressed: () {
                   Navigator.pop(ctx);
+                  reportErrorToSentry(context, error, detail: 'bvid: $errorBvid');
+                },
+                child: const Text('反馈'),
+              ),
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
                   // Retry download
                   final storage = context.read<StorageService>();
                   final video = storage.videos.cast<VideoItem?>().firstWhere(
@@ -84,6 +92,10 @@ class _FeedPageState extends State<FeedPage> {
                 },
                 child: const Text('标记为失效'),
               ),
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('关闭'),
+              ),
             ],
           ),
         );
@@ -99,8 +111,15 @@ class _FeedPageState extends State<FeedPage> {
             ),
             actions: [
               CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  reportErrorToSentry(context, error);
+                },
+                child: const Text('反馈'),
+              ),
+              CupertinoDialogAction(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('确定'),
+                child: const Text('关闭'),
               ),
             ],
           ),
