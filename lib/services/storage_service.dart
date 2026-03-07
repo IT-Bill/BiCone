@@ -240,7 +240,7 @@ class StorageService extends ChangeNotifier {
   // ─── Settings ─────────────────────────────────────────
 
   String get rssHubUrl =>
-      _settingsBox.get('rssHubUrl', defaultValue: 'https://squirrel.itbill.cn');
+      _settingsBox.get('rssHubUrl', defaultValue: 'https://rsshub.bicone.itbill.cn');
   Future<void> setRssHubUrl(String url) async {
     await _settingsBox.put('rssHubUrl', url);
     notifyListeners();

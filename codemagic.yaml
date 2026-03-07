@@ -35,3 +35,7 @@ workflows:
     artifacts:
       - build/ios/iphoneos/bicone_unsigned.ipa
       - /tmp/xcodebuild_logs/*.log
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
