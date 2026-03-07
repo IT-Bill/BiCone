@@ -1,0 +1,30 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'BiCone — Bilibili 专属防失效追更神器。一键订阅、自动监测、自动缓存，不错过 UP 主的每一次更新。' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#FB7299" />
+    <link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}favicon.png`} />
+    <link rel="icon" type="image/x-icon" href={`${import.meta.env.BASE_URL}favicon.ico`} />
+    <title>{title}</title>
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body class="bg-white">
+    <slot />
+  </body>
+</html>

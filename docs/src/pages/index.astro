@@ -1,0 +1,257 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="BiCone — Bilibili 防失效追更神器">
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 border-b border-black/5">
+    <div class="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 text-text-primary font-semibold text-base tracking-tight">
+        <img src={`${import.meta.env.BASE_URL}icon.png`} alt="BiCone" class="w-6 h-6 rounded" />
+        BiCone
+      </a>
+      <div class="hidden sm:flex items-center gap-8 text-sm text-text-secondary">
+        <a href="#features" class="hover:text-text-primary transition-colors">功能</a>
+        <a href="#quickstart" class="hover:text-text-primary transition-colors">快速上手</a>
+        <a href="#download" class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-bilipink text-white rounded-full text-sm font-medium hover:bg-bilipink-dark transition-colors">
+          下载
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative pt-32 pb-24 sm:pt-40 sm:pb-32 overflow-hidden">
+    <!-- Gradient background -->
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-bilipink/8 via-bilipink/3 to-transparent rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-bilipink/8 text-bilipink text-sm font-medium mb-8">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bilipink opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-bilipink"></span>
+        </span>
+        支持 Android & Windows
+      </div>
+
+      <h1 class="text-5xl sm:text-7xl font-bold tracking-tight text-text-primary leading-[1.08]">
+        再也不错过
+        <br />
+        <span class="text-bilipink">UP 主</span>的每一次更新
+      </h1>
+
+      <p class="mt-6 text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
+        一键订阅 · 自动监测 · 更新通知 · 自动缓存
+        <br class="hidden sm:block" />
+        彻底告别"视频已失效"的遗憾
+      </p>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#download" class="inline-flex items-center gap-2 px-8 py-3.5 bg-bilipink text-white rounded-full text-base font-medium hover:bg-bilipink-dark transition-all hover:scale-105 shadow-lg shadow-bilipink/25">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          免费下载
+        </a>
+        <a href="https://github.com/IT-Bill/BiCone" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-8 py-3.5 bg-surface-alt text-text-primary rounded-full text-base font-medium hover:bg-black/8 transition-all">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-24 sm:py-32 bg-surface">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">为 B 站用户量身打造</h2>
+        <p class="mt-4 text-text-secondary text-lg">简单、高效、自动化的视频追更体验</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-bilipink/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-bilipink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">订阅 UP 主</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">输入 UID 即可添加订阅，通过 RSS 自动追踪 UP 主的最新投稿动态。</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-biliblue/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-biliblue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">自动缓存</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">检测到新视频后自动下载到本地，无需手动操作，永久保存不怕失效。</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">高速下载</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">多线程分段并行下载，速度可达 20 MB/s 以上，断点续传不怕中断。</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">多画质选择</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">支持 360P 至 4K 多种画质自由选择，满足不同存储与观看需求。</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">更新通知</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">新视频发布时推送本地通知，包含 UP 主名、视频标题和下载状态。</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="group p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div class="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-text-primary mb-2">跨平台支持</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">同时支持 Android 和 Windows 双平台，数据独立管理，体验一致。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="quickstart" class="py-24 sm:py-32">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">三步开始使用</h2>
+        <p class="mt-4 text-text-secondary text-lg">简单到不需要教程</p>
+      </div>
+
+      <div class="space-y-12">
+        <!-- Step 1 -->
+        <div class="flex gap-6 items-start">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">1</div>
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-2">扫码登录</h3>
+            <p class="text-text-secondary leading-relaxed">打开 BiCone，使用 Bilibili 手机客户端扫码登录，获取视频下载所需的权限。</p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flex gap-6 items-start">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">2</div>
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-2">添加订阅</h3>
+            <p class="text-text-secondary leading-relaxed">进入订阅页面，输入 UP 主的 UID（在 UP 主主页 URL 中可以找到），即可开始监测。</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flex gap-6 items-start">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">3</div>
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-2">坐等更新</h3>
+            <p class="text-text-secondary leading-relaxed">开启自动下载后，BiCone 会在后台持续监测并自动缓存新视频。你只需要打开就能看。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section id="download" class="py-24 sm:py-32 bg-surface">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">立即下载</h2>
+        <p class="mt-4 text-text-secondary text-lg">免费开源，选择你的平台开始使用</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+        <!-- Android -->
+        <a href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer"
+          class="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-1">
+          <svg class="w-12 h-12 text-[#3DDC84]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.523 15.3414c-.5737 0-1.0414.4651-1.0414 1.0414 0 .5765.4677 1.0414 1.0414 1.0414.5765 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4649-1.0414-1.0414-1.0414zm-11.046 0c-.5765 0-1.0414.4651-1.0414 1.0414 0 .5765.4649 1.0414 1.0414 1.0414.5737 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4677-1.0414-1.0414-1.0414zM17.8098 10.18l1.7226-2.9923c.0965-.1677.0397-.3823-.1282-.4789-.1677-.0965-.3822-.0396-.4789.1282l-1.7452 3.0314c-1.2877-.5879-2.7324-.9155-4.2611-.9155-1.5289 0-2.9736.3276-4.2613.9155l-1.7452-3.0314c-.0966-.1678-.3112-.2247-.4789-.1282-.1678.0966-.2247.3112-.1282.4789l1.7226 2.9923C5.0443 11.5858 3.25 14.0695 3.25 16.9562h17.5c0-2.8868-1.7943-5.3705-4.9402-6.7762z" />
+          </svg>
+          <div class="text-center">
+            <div class="font-semibold text-text-primary text-lg">Android</div>
+            <div class="text-text-tertiary text-sm mt-1">APK 直接安装</div>
+          </div>
+        </a>
+
+        <!-- Windows -->
+        <a href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer"
+          class="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-1">
+          <svg class="w-12 h-12 text-[#0078D4]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+          </svg>
+          <div class="text-center">
+            <div class="font-semibold text-text-primary text-lg">Windows</div>
+            <div class="text-text-tertiary text-sm mt-1">x64 安装版 / 便携版</div>
+          </div>
+        </a>
+
+        <!-- iOS -->
+        <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 opacity-60">
+          <svg class="w-12 h-12 text-text-tertiary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+          </svg>
+          <div class="text-center">
+            <div class="font-semibold text-text-primary text-lg">iOS</div>
+            <div class="text-text-tertiary text-sm mt-1">即将推出</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center mt-8 text-text-tertiary text-sm">
+        国内用户可访问
+        <a href="https://gitee.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer" class="text-bilipink hover:underline">Gitee 镜像</a>
+        获得更快的下载速度
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-black/5">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2 text-text-secondary text-sm">
+          <img src={`${import.meta.env.BASE_URL}icon.png`} alt="BiCone" class="w-5 h-5 rounded" />
+          <span>BiCone &copy; {new Date().getFullYear()}</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm text-text-tertiary">
+          <a href="https://github.com/IT-Bill/BiCone" target="_blank" rel="noopener noreferrer" class="hover:text-text-primary transition-colors">GitHub</a>
+          <a href="https://github.com/IT-Bill/BiCone/releases" target="_blank" rel="noopener noreferrer" class="hover:text-text-primary transition-colors">Releases</a>
+          <a href="https://github.com/IT-Bill/BiCone/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="hover:text-text-primary transition-colors">MIT License</a>
+        </div>
+      </div>
+      <p class="mt-6 text-center text-xs text-text-tertiary leading-relaxed max-w-2xl mx-auto">
+        本项目仅供技术研究和学习探讨，不提供任何受版权保护的内容。用户需自行确保遵守相关法律法规。
+      </p>
+    </div>
+  </footer>
+</Layout>
