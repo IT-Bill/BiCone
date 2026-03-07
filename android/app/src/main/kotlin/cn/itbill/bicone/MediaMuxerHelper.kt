@@ -47,7 +47,11 @@ object MediaMuxerHelper {
             // Write audio samples
             writeSamples(audioExtractor, muxer, muxerAudioTrack)
 
-            muxer.stop()
+            try {
+                muxer.stop()
+            } catch (_: IllegalStateException) {
+                // "muxer would have stopped already" — benign, muxing completed
+            }
         } finally {
             videoExtractor.release()
             audioExtractor.release()
