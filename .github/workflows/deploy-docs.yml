@@ -1,70 +1,54 @@
-name: Deploy Docs to GitHub Pages and Gitee Pages
+name: Deploy Docs to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: ./docs
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: docs/pnpm-lock.yaml
 
-      - name: Install deps
-        working-directory: ./docs
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
-      - name: Build docs
-        working-directory: ./docs
-        run: pnpm build
+      - run: pnpm build
 
-      - name: Publish dist to gh-pages on GitHub
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./docs/dist
-          force_orphan: true
+          path: docs/dist
 
-      - name: Mirror repo to Gitee
-        uses: wearerequired/git-mirror-action@master
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
-        with:
-          source-repo: git@github.com:${{ github.repository }}.git
-          destination-repo: git@gitee.com:it-bill/BiCone.git
-
-      - name: Rebuild Gitee Pages
-        uses: yanglbme/gitee-pages-action@main
-        with:
-          gitee-username: it-bill
-          gitee-password: ${{ secrets.GITEE_PASSWORD }}
-          gitee-repo: it-bill/BiCone
-          branch: gh-pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
