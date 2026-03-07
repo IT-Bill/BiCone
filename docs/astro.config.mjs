@@ -14,6 +14,6 @@ export default defineConfig({
   base: isGitHubPages ? '/BiCone/' : '/',
   trailingSlash: 'always',
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [/** @type {any} */ (tailwindcss())]
   }
 });
