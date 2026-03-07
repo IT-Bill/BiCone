@@ -233,10 +233,11 @@ class FullVideoCard extends StatelessWidget {
     }
 
     if (video.downloadStatus == DownloadStatus.downloading) {
+      final isMerging = downloadTask?.phase == DownloadPhase.merging;
       actions.add(CupertinoButton(
         padding: EdgeInsets.zero,
         minimumSize: const Size.square(32),
-        onPressed: onDownload,
+        onPressed: isMerging ? null : onDownload,
         child: Container(
           padding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -247,11 +248,12 @@ class FullVideoCard extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(CupertinoIcons.pause_circle,
-                  size: 14, color: CupertinoColors.systemGrey),
-              const SizedBox(width: 4),
+              if (!isMerging)
+                const Icon(CupertinoIcons.pause_circle,
+                    size: 14, color: CupertinoColors.systemGrey),
+              if (!isMerging) const SizedBox(width: 4),
               Text(
-                '${(video.downloadProgress * 100).toStringAsFixed(0)}%',
+                isMerging ? '合并中' : '${(video.downloadProgress * 100).toStringAsFixed(0)}%',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -366,32 +368,6 @@ class FullVideoCard extends StatelessWidget {
     final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
     final trackColor = CupertinoColors.systemGrey5.resolveFrom(context);
 
-    if (task.phase == DownloadPhase.merging) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Row(
-          children: [
-            const CupertinoActivityIndicator(radius: 8),
-            const SizedBox(width: 8),
-            Text('合并中...', style: TextStyle(fontSize: 12, color: secondaryColor)),
-          ],
-        ),
-      );
-    }
-
-    if (task.phase == DownloadPhase.preparing) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Row(
-          children: [
-            const CupertinoActivityIndicator(radius: 8),
-            const SizedBox(width: 8),
-            Text('准备中...', style: TextStyle(fontSize: 12, color: secondaryColor)),
-          ],
-        ),
-      );
-    }
-
     Widget buildStreamBar({
       required String label,
       required StreamProgress stream,
@@ -475,10 +451,25 @@ class FullVideoCard extends StatelessWidget {
       );
     }
 
+    if (task.phase == DownloadPhase.preparing) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            const CupertinoActivityIndicator(radius: 8),
+            const SizedBox(width: 8),
+            Text('准备中...', style: TextStyle(fontSize: 12, color: secondaryColor)),
+          ],
+        ),
+      );
+    }
+
     final videoCompleted = task.phase == DownloadPhase.downloadingAudio ||
         task.phase == DownloadPhase.merging;
     final videoActive = task.phase == DownloadPhase.downloadingVideo;
     final audioActive = task.phase == DownloadPhase.downloadingAudio;
+    final audioCompleted = task.phase == DownloadPhase.merging;
+    final mergeActive = task.phase == DownloadPhase.merging;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -495,6 +486,13 @@ class FullVideoCard extends StatelessWidget {
             label: '音频',
             stream: task.audioStream,
             active: audioActive,
+            completed: audioCompleted,
+          ),
+          const SizedBox(height: 6),
+          buildStreamBar(
+            label: '合并',
+            stream: task.mergeStream,
+            active: mergeActive,
             completed: false,
           ),
         ],

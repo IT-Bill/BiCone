@@ -94,6 +94,7 @@ class DownloadTask {
   DownloadPhase phase;
   final StreamProgress videoStream = StreamProgress();
   final StreamProgress audioStream = StreamProgress();
+  final StreamProgress mergeStream = StreamProgress();
 
   DownloadTask({
     required this.video,

@@ -63,13 +63,6 @@ class _FeedPageState extends State<FeedPage> {
               CupertinoDialogAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  reportErrorToSentry(context, error, detail: 'bvid: $errorBvid');
-                },
-                child: const Text('反馈'),
-              ),
-              CupertinoDialogAction(
-                onPressed: () {
-                  Navigator.pop(ctx);
                   // Retry download
                   final storage = context.read<StorageService>();
                   final video = storage.videos.cast<VideoItem?>().firstWhere(

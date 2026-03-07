@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:dio/dio.dart';
@@ -212,13 +213,8 @@ class DownloadService extends ChangeNotifier {
       debugPrint('Download: merging video and audio...');
       task.phase = DownloadPhase.merging;
       task.progress = 0.99;
-      _notificationService.showDownloadProgressNotification(
-        title: task.video.title,
-        progress: 99,
-        status: '合并中...',
-      );
       notifyListeners();
-      await _mergeStreams(videoPath, audioPath, outputPath);
+      await _mergeStreams(videoPath, audioPath, outputPath, task);
 
       // 7. Clean up temp files
       try { await File(videoPath).delete(); } catch (_) {}
@@ -301,7 +297,7 @@ class DownloadService extends ChangeNotifier {
           task.status = DownloadStatus.failed;
           await _storage.updateVideoStatus(
               task.video.bvid, DownloadStatus.failed);
-          _lastError = '下载失败：视频已失效或网络异常';
+          _lastError = '未在源站中找到，\n可能已失效或网络异常';
           _lastErrorBvid = task.video.bvid;
         } else {
           // Network or other recoverable errors — pause instead of fail
@@ -701,29 +697,62 @@ class DownloadService extends ChangeNotifier {
 
   /// Merge separate video and audio streams into a single MP4.
   Future<void> _mergeStreams(
-      String videoPath, String audioPath, String outputPath) async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      try {
-        await _mediaMuxerChannel.invokeMethod('mergeStreams', {
-          'videoPath': videoPath,
-          'audioPath': audioPath,
-          'outputPath': outputPath,
-        });
-      } on PlatformException catch (e) {
-        throw Exception('合并失败: ${e.message}');
+      String videoPath, String audioPath, String outputPath, DownloadTask task) async {
+    // Estimate output size = video + audio for progress tracking
+    final videoSize = await File(videoPath).length();
+    final audioSize = await File(audioPath).length();
+    final expectedSize = videoSize + audioSize;
+    task.mergeStream.totalBytes = expectedSize;
+
+    // Poll output file size periodically for progress
+    Timer? progressTimer;
+    if (expectedSize > 0) {
+      progressTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+        try {
+          final outFile = File(outputPath);
+          if (await outFile.exists()) {
+            final currentSize = await outFile.length();
+            task.mergeStream.update(currentSize, expectedSize);
+            _notificationService.showDownloadProgressNotification(
+              title: task.video.title,
+              progress: (99 * task.mergeStream.progress).round(),
+              status: '合并中 ${task.mergeStream.formattedSize}',
+            );
+            notifyListeners();
+          }
+        } catch (_) {}
+      });
+    }
+
+    try {
+      if (Platform.isAndroid || Platform.isIOS) {
+        try {
+          await _mediaMuxerChannel.invokeMethod('mergeStreams', {
+            'videoPath': videoPath,
+            'audioPath': audioPath,
+            'outputPath': outputPath,
+          });
+        } on PlatformException catch (e) {
+          throw Exception('合并失败: ${e.message}');
+        }
+      } else {
+        // Windows / Linux: use system ffmpeg
+        final result = await Process.run('ffmpeg', [
+          '-i', videoPath,
+          '-i', audioPath,
+          '-c', 'copy',
+          '-y',
+          outputPath,
+        ]);
+        if (result.exitCode != 0) {
+          throw Exception('FFmpeg合并失败: ${result.stderr}');
+        }
       }
-    } else {
-      // Windows / Linux: use system ffmpeg
-      final result = await Process.run('ffmpeg', [
-        '-i', videoPath,
-        '-i', audioPath,
-        '-c', 'copy',
-        '-y',
-        outputPath,
-      ]);
-      if (result.exitCode != 0) {
-        throw Exception('FFmpeg合并失败: ${result.stderr}');
-      }
+    } finally {
+      progressTimer?.cancel();
+      task.mergeStream.receivedBytes = expectedSize;
+      task.mergeStream.markComplete();
+      notifyListeners();
     }
   }
 

@@ -174,7 +174,11 @@ class CompactVideoCard extends StatelessWidget {
           width: 20,
           height: 20,
           child: video.downloadStatus == DownloadStatus.downloading
-              ? buildMiniProgress(video.downloadProgress)
+              ? buildMiniProgress(
+                  downloadTask?.phase == DownloadPhase.merging
+                      ? downloadTask!.mergeStream.progress
+                      : video.downloadProgress,
+                )
               : video.downloadStatus == DownloadStatus.paused
                   ? const Icon(CupertinoIcons.pause_circle,
                       size: 20, color: CupertinoColors.systemOrange)

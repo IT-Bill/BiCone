@@ -66,6 +66,8 @@ class VideoGrid extends StatelessWidget {
                   downloadTask: task,
                   onDownload: () async {
                     if (video.downloadStatus == DownloadStatus.downloading) {
+                      // Don't allow pause during merge phase
+                      if (task?.phase == DownloadPhase.merging) return;
                       await dl.pauseDownload(video.bvid);
                       return;
                     }

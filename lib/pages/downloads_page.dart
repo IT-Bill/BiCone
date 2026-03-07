@@ -149,28 +149,14 @@ class _ActiveDownloads extends StatelessWidget {
                             .resolveFrom(context),
                       ),
                     )
-                  else if (task.phase == DownloadPhase.merging)
-                    Row(
-                      children: [
-                        const CupertinoActivityIndicator(radius: 8),
-                        const SizedBox(width: 8),
-                        Text(
-                          '合并中...',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: CupertinoColors.secondaryLabel
-                                .resolveFrom(context),
-                          ),
-                        ),
-                      ],
-                    )
                   else ...[
                     _buildStreamProgressBar(
                       context,
                       label: '视频',
                       stream: task.videoStream,
                       active: task.phase == DownloadPhase.downloadingVideo,
-                      completed: task.phase == DownloadPhase.downloadingAudio,
+                      completed: task.phase == DownloadPhase.downloadingAudio ||
+                          task.phase == DownloadPhase.merging,
                       paused: task.status == DownloadStatus.paused,
                     ),
                     const SizedBox(height: 8),
@@ -179,15 +165,25 @@ class _ActiveDownloads extends StatelessWidget {
                       label: '音频',
                       stream: task.audioStream,
                       active: task.phase == DownloadPhase.downloadingAudio,
-                      completed: false,
+                      completed: task.phase == DownloadPhase.merging,
                       paused: task.status == DownloadStatus.paused,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStreamProgressBar(
+                      context,
+                      label: '合并',
+                      stream: task.mergeStream,
+                      active: task.phase == DownloadPhase.merging,
+                      completed: false,
+                      paused: false,
                     ),
                   ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       const Spacer(),
-                      if (task.status == DownloadStatus.downloading)
+                      if (task.status == DownloadStatus.downloading &&
+                          task.phase != DownloadPhase.merging)
                         CupertinoButton(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size.square(28),
