@@ -15,6 +15,10 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.head_branch, 'v')
 
+    env:
+      ALL_DONE: 'false'
+      RELEASE_TAG: ''
+
     steps:
       - name: Wait for all release workflows
         id: check
@@ -46,6 +50,7 @@ jobs:
         if: env.ALL_DONE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           TAG="${RELEASE_TAG}"
           VERSION="${TAG#v}"
