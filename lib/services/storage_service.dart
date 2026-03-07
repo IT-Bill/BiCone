@@ -137,6 +137,17 @@ class StorageService extends ChangeNotifier {
     }
   }
 
+  Future<void> updateKeywords(int mid, List<String> keywords) async {
+    final data = _subsBox.get(mid.toString());
+    if (data != null) {
+      final map = Map<String, dynamic>.from(data);
+      map['keywords'] = keywords;
+      await _subsBox.put(mid.toString(), map);
+      _loadSubscriptions();
+      notifyListeners();
+    }
+  }
+
   /// Remove all video records for a given UP主 (by mid).
   /// Returns the list of removed videos for potential file cleanup.
   Future<List<VideoItem>> removeVideosByAuthor(int mid) async {

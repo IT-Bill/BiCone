@@ -131,8 +131,9 @@ class SubscriptionsPage extends StatelessWidget {
                   if (Platform.isIOS) {
                     final docs = await getApplicationDocumentsDirectory();
                     final dlDir = Directory('${docs.path}/Downloads');
-                    if (!await dlDir.exists())
+                    if (!await dlDir.exists()) {
                       await dlDir.create(recursive: true);
+                    }
                     storage.setDownloadPath(dlDir.path);
                   } else {
                     final result = await FilePicker.platform.getDirectoryPath(
@@ -310,6 +311,17 @@ class SubscriptionsPage extends StatelessWidget {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(ctx);
+              _showKeywordsDialog(context, storage, sub);
+            },
+            child: Text(
+              sub.keywords.isEmpty
+                  ? '关键词过滤（未设置）'
+                  : '关键词过滤（${sub.keywords.length}个）',
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(ctx);
               _showPauseMenu(context, storage, sub);
             },
             child: const Text('暂停/恢复 ▸'),
@@ -378,6 +390,122 @@ class SubscriptionsPage extends StatelessWidget {
           child: const Text('取消'),
         ),
       ),
+    );
+  }
+
+  void _showKeywordsDialog(
+    BuildContext context,
+    StorageService storage,
+    Subscription sub,
+  ) {
+    final controller = TextEditingController();
+    List<String> keywords = List<String>.from(sub.keywords);
+
+    showCupertinoDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return CupertinoAlertDialog(
+              title: Text('关键词过滤 - ${sub.name}'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    '设置关键词后，仅标题包含任一关键词的视频才会自动下载。\n不设置则下载该UP主所有视频。',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: CupertinoColors.secondaryLabel.resolveFrom(ctx),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  CupertinoTextField(
+                    controller: controller,
+                    placeholder: '输入关键词',
+                    suffix: CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      onPressed: () {
+                        final text = controller.text.trim();
+                        if (text.isNotEmpty && !keywords.contains(text)) {
+                          setDialogState(() {
+                            keywords.add(text);
+                          });
+                          controller.clear();
+                        }
+                      },
+                      child: const Icon(CupertinoIcons.add_circled, size: 22),
+                    ),
+                    onSubmitted: (text) {
+                      final trimmed = text.trim();
+                      if (trimmed.isNotEmpty && !keywords.contains(trimmed)) {
+                        setDialogState(() {
+                          keywords.add(trimmed);
+                        });
+                        controller.clear();
+                      }
+                    },
+                  ),
+                  if (keywords.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: keywords.map((kw) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              keywords.remove(kw);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemGrey5.resolveFrom(ctx),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  kw,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  CupertinoIcons.xmark_circle_fill,
+                                  size: 16,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(ctx),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('取消'),
+                ),
+                CupertinoDialogAction(
+                  onPressed: () {
+                    storage.updateKeywords(sub.mid, keywords);
+                    Navigator.pop(dialogCtx);
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

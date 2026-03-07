@@ -91,7 +91,7 @@ class MonitorService extends ChangeNotifier {
           bool didStartDownload = false;
           if (willAutoDownload) {
             final videoPubDate = _parseDate(video.pubDate);
-            if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt)) {
+            if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt) && sub.matchesTitle(video.title)) {
               await _downloadService.addDownload(video);
               didStartDownload = true;
             }
