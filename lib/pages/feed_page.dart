@@ -20,7 +20,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   bool _showDeleted = true;
-  bool _showInvalidated = false;
+  bool _showInvalidated = true;
   int _selectedUpMid = 0; // 0 = all
 
   @override
