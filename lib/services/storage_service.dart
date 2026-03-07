@@ -76,6 +76,14 @@ class StorageService extends ChangeNotifier {
 
   // ─── Subscriptions ────────────────────────────────────
 
+  static const int maxActiveSubscriptions = 10;
+
+  int get activeSubscriptionCount =>
+      _subscriptions.where((s) => !s.paused).length;
+
+  bool get canAddActiveSubscription =>
+      activeSubscriptionCount < maxActiveSubscriptions;
+
   void _loadSubscriptions() {
     _subscriptions = [];
     for (var key in _subsBox.keys) {
@@ -88,6 +96,7 @@ class StorageService extends ChangeNotifier {
   }
 
   Future<void> addSubscription(Subscription sub) async {
+    if (!sub.paused && !canAddActiveSubscription) return;
     await _subsBox.put(sub.mid.toString(), sub.toJson());
     _loadSubscriptions();
     notifyListeners();
@@ -99,17 +108,20 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleSubscriptionPause(int mid) async {
+  Future<bool> toggleSubscriptionPause(int mid) async {
     final data = _subsBox.get(mid.toString());
     if (data != null) {
       final map = Map<String, dynamic>.from(data);
       final wasPaused = map['paused'] ?? false;
+      // Block un-pausing if active limit reached
+      if (wasPaused && !canAddActiveSubscription) return false;
       map['paused'] = !wasPaused;
       map['downloadPaused'] = false; // mutual exclusion
       await _subsBox.put(mid.toString(), map);
       _loadSubscriptions();
       notifyListeners();
     }
+    return true;
   }
 
   Future<void> toggleDownloadPause(int mid) async {

@@ -15,71 +15,93 @@ class SubscriptionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        transitionBetweenRoutes: false,
-        middle: const Text('我的订阅'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _showAddDialog(context),
-          child: const Icon(CupertinoIcons.add, size: 22),
-        ),
-      ),
-      child: SafeArea(
-        child: Consumer<StorageService>(
-          builder: (context, storage, _) {
-            final subs = storage.subscriptions;
-
-            if (subs.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.person_2,
-                        size: 64,
-                        color: CupertinoColors.tertiaryLabel
-                            .resolveFrom(context)),
-                    const SizedBox(height: 16),
-                    Text(
-                      '暂无订阅',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: CupertinoColors.secondaryLabel
-                            .resolveFrom(context),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '点击右上角 + 添加UP主',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: CupertinoColors.tertiaryLabel
-                            .resolveFrom(context),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: subs.length,
-              itemBuilder: (context, index) {
-                final sub = subs[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: SubscriptionCard(
-                    subscription: sub,
-                    onMore: () =>
-                        _showSubscriptionMenu(context, storage, sub),
+    return Consumer<StorageService>(
+      builder: (context, storage, _) {
+        return CupertinoPageScaffold(
+          navigationBar: CupertinoNavigationBar(
+            transitionBetweenRoutes: false,
+            middle: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('我的订阅'),
+                Text(
+                  '${storage.activeSubscriptionCount}/${StorageService.maxActiveSubscriptions} 个启用',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.normal,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
                   ),
+                ),
+              ],
+            ),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _showAddDialog(context),
+              child: const Icon(CupertinoIcons.add, size: 22),
+            ),
+          ),
+          child: SafeArea(
+            child: Builder(
+              builder: (context) {
+                final subs = storage.subscriptions;
+
+                if (subs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.person_2,
+                          size: 64,
+                          color: CupertinoColors.tertiaryLabel.resolveFrom(
+                            context,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '暂无订阅',
+                          style: TextStyle(
+                            fontSize: 17,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '点击右上角 + 添加UP主',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: CupertinoColors.tertiaryLabel.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  itemCount: subs.length,
+                  itemBuilder: (context, index) {
+                    final sub = subs[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: SubscriptionCard(
+                        subscription: sub,
+                        onMore: () =>
+                            _showSubscriptionMenu(context, storage, sub),
+                      ),
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -109,7 +131,8 @@ class SubscriptionsPage extends StatelessWidget {
                   if (Platform.isIOS) {
                     final docs = await getApplicationDocumentsDirectory();
                     final dlDir = Directory('${docs.path}/Downloads');
-                    if (!await dlDir.exists()) await dlDir.create(recursive: true);
+                    if (!await dlDir.exists())
+                      await dlDir.create(recursive: true);
                     storage.setDownloadPath(dlDir.path);
                   } else {
                     final result = await FilePicker.platform.getDirectoryPath(
@@ -157,8 +180,7 @@ class SubscriptionsPage extends StatelessWidget {
                       placeholder: '请输入UP主的UID',
                       prefix: const Padding(
                         padding: EdgeInsets.only(left: 8),
-                        child:
-                            Icon(CupertinoIcons.search, size: 18),
+                        child: Icon(CupertinoIcons.search, size: 18),
                       ),
                     ),
                     if (errorText != null)
@@ -205,14 +227,21 @@ class SubscriptionsPage extends StatelessWidget {
                             return;
                           }
 
-                          final storage =
-                              context.read<StorageService>();
+                          final storage = context.read<StorageService>();
 
                           // Check if already subscribed
-                          if (storage.subscriptions
-                              .any((s) => s.mid == uid)) {
+                          if (storage.subscriptions.any((s) => s.mid == uid)) {
                             setDialogState(() {
                               errorText = '已订阅该UP主';
+                            });
+                            return;
+                          }
+
+                          // Check active subscription limit
+                          if (!storage.canAddActiveSubscription) {
+                            setDialogState(() {
+                              errorText =
+                                  '已达到最大启用订阅数（${StorageService.maxActiveSubscriptions}个），请先暂停或删除一个订阅';
                             });
                             return;
                           }
@@ -235,7 +264,9 @@ class SubscriptionsPage extends StatelessWidget {
                             await storage.addSubscription(sub);
                             // Immediately refresh videos for the new subscription
                             if (context.mounted) {
-                              context.read<MonitorService>().checkForNewVideos();
+                              context
+                                  .read<MonitorService>()
+                                  .checkForNewVideos();
                             }
                             if (dialogCtx.mounted) {
                               Navigator.pop(dialogCtx);
@@ -258,7 +289,10 @@ class SubscriptionsPage extends StatelessWidget {
   }
 
   void _showSubscriptionMenu(
-      BuildContext context, StorageService storage, Subscription sub) {
+    BuildContext context,
+    StorageService storage,
+    Subscription sub,
+  ) {
     // Determine current pause status text
     String pauseStatus = '';
     if (sub.paused) {
@@ -298,7 +332,10 @@ class SubscriptionsPage extends StatelessWidget {
   }
 
   void _showPauseMenu(
-      BuildContext context, StorageService storage, Subscription sub) {
+    BuildContext context,
+    StorageService storage,
+    Subscription sub,
+  ) {
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => CupertinoActionSheet(
@@ -309,22 +346,31 @@ class SubscriptionsPage extends StatelessWidget {
               Navigator.pop(ctx);
               storage.toggleDownloadPause(sub.mid);
             },
-            child: Text(
-              sub.downloadPaused
-                  ? '恢复自动下载'
-                  : '暂停自动下载（继续获取视频）',
-            ),
+            child: Text(sub.downloadPaused ? '恢复自动下载' : '暂停自动下载（继续获取视频）'),
           ),
           CupertinoActionSheetAction(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              storage.toggleSubscriptionPause(sub.mid);
+              final success = await storage.toggleSubscriptionPause(sub.mid);
+              if (!success && context.mounted) {
+                showCupertinoDialog(
+                  context: context,
+                  builder: (c) => CupertinoAlertDialog(
+                    title: const Text('无法恢复订阅'),
+                    content: Text(
+                      '已达到最大启用订阅数（${StorageService.maxActiveSubscriptions}个），请先暂停或删除一个订阅',
+                    ),
+                    actions: [
+                      CupertinoDialogAction(
+                        onPressed: () => Navigator.pop(c),
+                        child: const Text('确定'),
+                      ),
+                    ],
+                  ),
+                );
+              }
             },
-            child: Text(
-              sub.paused
-                  ? '恢复订阅'
-                  : '完全暂停（不获取视频）',
-            ),
+            child: Text(sub.paused ? '恢复订阅' : '完全暂停（不获取视频）'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -336,7 +382,10 @@ class SubscriptionsPage extends StatelessWidget {
   }
 
   void _confirmDelete(
-      BuildContext context, StorageService storage, Subscription sub) {
+    BuildContext context,
+    StorageService storage,
+    Subscription sub,
+  ) {
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => CupertinoActionSheet(
@@ -367,8 +416,7 @@ class SubscriptionsPage extends StatelessWidget {
             isDestructiveAction: true,
             onPressed: () async {
               final download = context.read<DownloadService>();
-              final removedVideos =
-                  await storage.removeVideosByAuthor(sub.mid);
+              final removedVideos = await storage.removeVideosByAuthor(sub.mid);
               await download.cancelAndDeleteByAuthor(removedVideos);
               await storage.removeSubscription(sub.mid);
               if (ctx.mounted) Navigator.pop(ctx);
