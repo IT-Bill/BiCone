@@ -38,7 +38,7 @@ class VideoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.1),
+            color: CupertinoColors.systemGrey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -420,7 +420,7 @@ class VideoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.1),
+            color: CupertinoColors.systemGrey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -551,7 +551,7 @@ class VideoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -572,7 +572,7 @@ class VideoCard extends StatelessWidget {
         video.downloadStatus == DownloadStatus.failed) {
       actions.add(CupertinoButton(
         padding: EdgeInsets.zero,
-        minSize: 32,
+        minimumSize: const Size.square(32),
         onPressed: onDownload,
         child: Container(
           padding:
@@ -601,7 +601,7 @@ class VideoCard extends StatelessWidget {
         padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: CupertinoColors.systemOrange.withOpacity(0.12),
+          color: CupertinoColors.systemOrange.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -622,7 +622,7 @@ class VideoCard extends StatelessWidget {
     if (video.downloadStatus == DownloadStatus.downloading) {
       actions.add(CupertinoButton(
         padding: EdgeInsets.zero,
-        minSize: 32,
+        minimumSize: const Size.square(32),
         onPressed: onDownload,
         child: Container(
           padding:
@@ -651,13 +651,13 @@ class VideoCard extends StatelessWidget {
       if (onPlay != null) {
         actions.add(CupertinoButton(
           padding: EdgeInsets.zero,
-          minSize: 28,
+          minimumSize: const Size.square(28),
           onPressed: onPlay,
           child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppTheme.biliPink.withOpacity(0.12),
+              color: AppTheme.biliPink.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Row(
@@ -680,7 +680,7 @@ class VideoCard extends StatelessWidget {
         padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: CupertinoColors.activeGreen.withOpacity(0.12),
+          color: CupertinoColors.activeGreen.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
@@ -701,7 +701,7 @@ class VideoCard extends StatelessWidget {
           padding: const EdgeInsets.only(left: 8),
           child: CupertinoButton(
             padding: EdgeInsets.zero,
-            minSize: 28,
+            minimumSize: const Size.square(28),
             onPressed: onDelete,
             child: const Icon(CupertinoIcons.trash,
                 size: 20, color: CupertinoColors.destructiveRed),
@@ -715,7 +715,7 @@ class VideoCard extends StatelessWidget {
       actions.add(Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: CupertinoColors.systemOrange.withOpacity(0.12),
+          color: CupertinoColors.systemOrange.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -736,7 +736,7 @@ class VideoCard extends StatelessWidget {
           padding: const EdgeInsets.only(left: 8),
           child: CupertinoButton(
             padding: EdgeInsets.zero,
-            minSize: 28,
+            minimumSize: const Size.square(28),
             onPressed: onRestore,
             child: const Icon(CupertinoIcons.arrow_counterclockwise,
                 size: 20, color: AppTheme.biliPink),
@@ -903,7 +903,7 @@ class _BlurredImageRoute extends PageRoute<void> {
   String? get barrierLabel => null;
 
   @override
-  Color get barrierColor => CupertinoColors.black.withOpacity(0.001);
+  Color get barrierColor => CupertinoColors.black.withValues(alpha: 0.001);
 
   @override
   bool get maintainState => true;
@@ -925,7 +925,7 @@ class _BlurredImageRoute extends PageRoute<void> {
       animation: animation,
       builder: (context, child) {
         return Container(
-          color: CupertinoColors.black.withOpacity(animation.value),
+          color: CupertinoColors.black.withValues(alpha: animation.value),
           child: child,
         );
       },

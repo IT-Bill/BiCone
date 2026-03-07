@@ -12,7 +12,7 @@ Future<void> reportErrorToSentry(
     level: SentryLevel.error,
     withScope: detail != null
         ? (scope) {
-            scope.setExtra('detail', detail);
+            scope.setTag('detail', detail);
           }
         : null,
   );

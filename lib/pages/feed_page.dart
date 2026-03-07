@@ -226,7 +226,7 @@ class _FeedPageState extends State<FeedPage> {
             padding: const EdgeInsetsDirectional.only(start: 20, end: 20),
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
-              minSize: 0,
+              minimumSize: Size.zero,
               onPressed: () => _showOptions(context),
               child: const Icon(CupertinoIcons.ellipsis_circle, size: 22),
             ),
@@ -251,7 +251,7 @@ class _FeedPageState extends State<FeedPage> {
               builder: (context, monitor, _) {
                 return CupertinoButton(
                   padding: EdgeInsets.zero,
-                  minSize: 0,
+                  minimumSize: Size.zero,
                   onPressed: monitor.isChecking
                       ? null
                       : () => monitor.checkForNewVideos(),
@@ -542,8 +542,10 @@ class _VideoGrid extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 if (context.mounted) {
-                  await context.read<DownloadService>().deleteVideoFiles(video);
-                  context.read<StorageService>().deleteVideo(video.bvid);
+                  final dl = context.read<DownloadService>();
+                  final st = context.read<StorageService>();
+                  await dl.deleteVideoFiles(video);
+                  st.deleteVideo(video.bvid);
                 }
               },
               child: const Text('删除'),
@@ -569,8 +571,10 @@ class _VideoGrid extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(ctx);
                 if (context.mounted) {
-                  await context.read<DownloadService>().deleteVideoFiles(video);
-                  context.read<StorageService>().deleteVideo(video.bvid);
+                  final dl = context.read<DownloadService>();
+                  final st = context.read<StorageService>();
+                  await dl.deleteVideoFiles(video);
+                  st.deleteVideo(video.bvid);
                 }
               },
               child: const Text('删除'),

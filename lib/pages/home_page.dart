@@ -60,17 +60,17 @@ class _HomePageState extends State<HomePage> {
                   decoration: BoxDecoration(
                     color: CupertinoColors.systemBackground
                         .resolveFrom(context)
-                        .withOpacity(0.72),
+                        .withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: CupertinoColors.systemGrey4
                           .resolveFrom(context)
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       width: 0.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: CupertinoColors.black.withOpacity(0.08),
+                        color: CupertinoColors.black.withValues(alpha: 0.08),
                         blurRadius: 20,
                         offset: const Offset(0, 4),
                       ),

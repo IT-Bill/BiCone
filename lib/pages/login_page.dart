@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                           boxShadow: [
                             BoxShadow(
                               color: CupertinoColors.systemGrey
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                               blurRadius: 20,
                               offset: const Offset(0, 4),
                             ),
@@ -192,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFFFF).withOpacity(0.9),
+                  color: const Color(0xFFFFFFFF).withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Column(

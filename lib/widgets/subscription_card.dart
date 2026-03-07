@@ -22,7 +22,7 @@ class SubscriptionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: CupertinoColors.systemGrey.withOpacity(0.08),
+            color: CupertinoColors.systemGrey.withValues(alpha: 0.08),
             blurRadius: 6,
             offset: const Offset(0, 1),
           ),
@@ -38,7 +38,7 @@ class SubscriptionCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
+                    placeholder: (_, _) => Container(
                       width: 48,
                       height: 48,
                       color: CupertinoColors.systemGrey5
@@ -46,7 +46,7 @@ class SubscriptionCard extends StatelessWidget {
                       child: const Icon(CupertinoIcons.person_fill,
                           size: 24, color: CupertinoColors.systemGrey),
                     ),
-                    errorWidget: (_, __, ___) => Container(
+                    errorWidget: (_, _, _) => Container(
                       width: 48,
                       height: 48,
                       color: CupertinoColors.systemGrey5
@@ -128,7 +128,7 @@ class SubscriptionCard extends StatelessWidget {
           if (onMore != null)
             CupertinoButton(
               padding: EdgeInsets.zero,
-              minSize: 32,
+              minimumSize: const Size.square(32),
               onPressed: onMore,
               child: Icon(
                 CupertinoIcons.ellipsis,

@@ -190,7 +190,7 @@ class _ActiveDownloads extends StatelessWidget {
                       if (task.status == DownloadStatus.downloading)
                         CupertinoButton(
                           padding: EdgeInsets.zero,
-                          minSize: 28,
+                          minimumSize: const Size.square(28),
                           onPressed: () =>
                               dl.pauseDownload(task.video.bvid),
                           child: Icon(
@@ -203,7 +203,7 @@ class _ActiveDownloads extends StatelessWidget {
                       else if (task.status == DownloadStatus.paused)
                         CupertinoButton(
                           padding: EdgeInsets.zero,
-                          minSize: 28,
+                          minimumSize: const Size.square(28),
                           onPressed: () =>
                               dl.resumeDownload(task.video.bvid),
                           child: Icon(
@@ -215,7 +215,7 @@ class _ActiveDownloads extends StatelessWidget {
                         ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
-                        minSize: 28,
+                        minimumSize: const Size.square(28),
                         onPressed: () =>
                             dl.cancelDownload(task.video.bvid),
                         child: Icon(

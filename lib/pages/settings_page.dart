@@ -188,7 +188,7 @@ class SettingsPage extends StatelessWidget {
           width: 36,
           height: 36,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
+          errorBuilder: (_, _, _) =>
               const Icon(CupertinoIcons.person_fill, size: 24),
         ),
       );
