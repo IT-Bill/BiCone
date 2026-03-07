@@ -185,35 +185,65 @@ import Layout from '../layouts/Layout.astro';
   <!-- Download Section -->
   <section id="download" class="py-24 sm:py-32 bg-surface">
     <div class="max-w-4xl mx-auto px-6">
-      <div class="text-center mb-16">
+      <div class="text-center mb-10">
         <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">立即下载</h2>
         <p class="mt-4 text-text-secondary text-lg">免费开源，选择你的平台开始使用</p>
       </div>
 
+      <!-- Source Toggle -->
+      <div class="flex justify-center mb-10">
+        <div class="inline-flex items-center bg-white rounded-full p-1 border border-black/5 shadow-sm" id="source-toggle">
+          <button data-source="github" class="source-btn px-5 py-2 rounded-full text-sm font-medium transition-all bg-bilipink text-white">GitHub</button>
+          <button data-source="gitee" class="source-btn px-5 py-2 rounded-full text-sm font-medium transition-all text-text-secondary hover:text-text-primary">Gitee（国内推荐）</button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
         <!-- Android -->
-        <a href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer"
-          class="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-1">
+        <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5">
           <svg class="w-12 h-12 text-[#3DDC84]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.523 15.3414c-.5737 0-1.0414.4651-1.0414 1.0414 0 .5765.4677 1.0414 1.0414 1.0414.5765 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4649-1.0414-1.0414-1.0414zm-11.046 0c-.5765 0-1.0414.4651-1.0414 1.0414 0 .5765.4649 1.0414 1.0414 1.0414.5737 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4677-1.0414-1.0414-1.0414zM17.8098 10.18l1.7226-2.9923c.0965-.1677.0397-.3823-.1282-.4789-.1677-.0965-.3822-.0396-.4789.1282l-1.7452 3.0314c-1.2877-.5879-2.7324-.9155-4.2611-.9155-1.5289 0-2.9736.3276-4.2613.9155l-1.7452-3.0314c-.0966-.1678-.3112-.2247-.4789-.1282-.1678.0966-.2247.3112-.1282.4789l1.7226 2.9923C5.0443 11.5858 3.25 14.0695 3.25 16.9562h17.5c0-2.8868-1.7943-5.3705-4.9402-6.7762z" />
           </svg>
-          <div class="text-center">
+          <div class="text-center mb-2">
             <div class="font-semibold text-text-primary text-lg">Android</div>
-            <div class="text-text-tertiary text-sm mt-1">APK 直接安装</div>
           </div>
-        </a>
+          <div class="flex flex-col gap-2 w-full">
+            <a data-file="arm64-v8a.apk"
+               class="download-link flex items-center justify-center gap-1.5 px-4 py-2 bg-bilipink/10 text-bilipink rounded-lg text-sm font-medium hover:bg-bilipink/20 transition-colors"
+               href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
+              64位 (arm64)
+              <span class="text-xs text-bilipink/60">推荐</span>
+            </a>
+            <a data-file="armeabi-v7a.apk"
+               class="download-link flex items-center justify-center px-4 py-2 bg-surface-alt text-text-secondary rounded-lg text-sm font-medium hover:bg-black/8 transition-colors"
+               href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
+              32位 (armeabi)
+            </a>
+          </div>
+        </div>
 
         <!-- Windows -->
-        <a href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer"
-          class="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-1">
+        <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5">
           <svg class="w-12 h-12 text-[#0078D4]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
           </svg>
-          <div class="text-center">
-            <div class="font-semibold text-text-primary text-lg">Windows</div>
-            <div class="text-text-tertiary text-sm mt-1">x64 安装版 / 便携版</div>
+          <div class="text-center mb-2">
+            <div class="font-semibold text-text-primary text-lg">Windows x64</div>
           </div>
-        </a>
+          <div class="flex flex-col gap-2 w-full">
+            <a data-file="windows-x64-setup.exe"
+               class="download-link flex items-center justify-center gap-1.5 px-4 py-2 bg-bilipink/10 text-bilipink rounded-lg text-sm font-medium hover:bg-bilipink/20 transition-colors"
+               href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
+              安装版 (exe)
+              <span class="text-xs text-bilipink/60">推荐</span>
+            </a>
+            <a data-file="windows-x64.zip"
+               class="download-link flex items-center justify-center px-4 py-2 bg-surface-alt text-text-secondary rounded-lg text-sm font-medium hover:bg-black/8 transition-colors"
+               href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
+              便携版 (zip)
+            </a>
+          </div>
+        </div>
 
         <!-- iOS -->
         <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-black/5 opacity-60">
@@ -226,14 +256,88 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
       </div>
-
-      <p class="text-center mt-8 text-text-tertiary text-sm">
-        国内用户可访问
-        <a href="https://gitee.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer" class="text-bilipink hover:underline">Gitee 镜像</a>
-        获得更快的下载速度
-      </p>
     </div>
   </section>
+
+  <!-- Download source toggle & dynamic link script -->
+  <script>
+    const GITHUB_RELEASE = 'https://github.com/IT-Bill/BiCone/releases/latest';
+    const GITEE_RELEASE = 'https://gitee.com/IT-Bill/BiCone/releases/latest';
+    const GITHUB_API = 'https://api.github.com/repos/IT-Bill/BiCone/releases/latest';
+
+    interface Asset { name: string; browser_download_url: string; }
+    interface Release { tag_name: string; assets: Asset[]; }
+
+    let currentSource = 'github';
+    let releaseData: Release | null = null;
+
+    const toggle = document.getElementById('source-toggle');
+    const buttons = toggle?.querySelectorAll<HTMLButtonElement>('.source-btn') ?? [];
+    const links = document.querySelectorAll<HTMLAnchorElement>('.download-link');
+
+    // Fetch latest release info from GitHub API
+    async function fetchRelease() {
+      try {
+        const res = await fetch(GITHUB_API);
+        if (res.ok) {
+          releaseData = await res.json();
+          updateLinks();
+        }
+      } catch {
+        // Silently fail — links remain as release page fallbacks
+      }
+    }
+
+    function getDownloadUrl(fileSuffix: string): string {
+      if (currentSource === 'gitee') {
+        if (releaseData) {
+          // Gitee download URL pattern: /attachments/files/download/VERSION/FILENAME
+          const asset = releaseData.assets.find((a) => a.name.endsWith(fileSuffix));
+          if (asset) {
+            return `https://gitee.com/IT-Bill/BiCone/releases/download/${releaseData.tag_name}/${asset.name}`;
+          }
+        }
+        return GITEE_RELEASE;
+      }
+      // GitHub: use direct asset download URL
+      if (releaseData) {
+        const asset = releaseData.assets.find((a) => a.name.endsWith(fileSuffix));
+        if (asset) return asset.browser_download_url;
+      }
+      return GITHUB_RELEASE;
+    }
+
+    function updateLinks() {
+      links.forEach((link) => {
+        const fileSuffix = link.getAttribute('data-file');
+        if (fileSuffix) {
+          link.setAttribute('href', getDownloadUrl(fileSuffix));
+        }
+      });
+    }
+
+    function updateButtons() {
+      buttons.forEach((btn) => {
+        if (btn.getAttribute('data-source') === currentSource) {
+          btn.classList.add('bg-bilipink', 'text-white');
+          btn.classList.remove('text-text-secondary', 'hover:text-text-primary');
+        } else {
+          btn.classList.remove('bg-bilipink', 'text-white');
+          btn.classList.add('text-text-secondary', 'hover:text-text-primary');
+        }
+      });
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentSource = btn.getAttribute('data-source') || 'github';
+        updateButtons();
+        updateLinks();
+      });
+    });
+
+    fetchRelease();
+  </script>
 
   <!-- Footer -->
   <footer class="py-12 border-t border-black/5">
