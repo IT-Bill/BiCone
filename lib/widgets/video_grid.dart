@@ -51,7 +51,7 @@ class VideoGrid extends StatelessWidget {
         final isDesktop = width >= 720;
         final padding = isDesktop
             ? const EdgeInsets.fromLTRB(16, 16, 16, 24)
-            : const EdgeInsets.fromLTRB(8, 8, 8, 100);
+            : const EdgeInsets.fromLTRB(12, 12, 12, 120);
 
         Widget scrollView = CustomScrollView(
           slivers: [
@@ -158,8 +158,8 @@ class VideoGrid extends StatelessWidget {
     final availableWidth = totalWidth - horizontalPadding * 2 - crossAxisSpacing * (crossAxisCount - 1);
     final columnWidth = availableWidth / crossAxisCount;
     final thumbnailHeight = columnWidth / (16 / 9);
-    // padding(6+6) + title 2 lines(12*1.4*2=33.6) + gap(2) + author(15) + gap(4) + actions(20) + buffer
-    const textAreaHeight = 90.0;
+    // padding(8+8) + title 2 lines(13*1.3*2=33.8) + gap(4) + author(15) + gap(4) + actions(20) + buffer
+    const textAreaHeight = 96.0;
     final cellHeight = thumbnailHeight + textAreaHeight;
     return columnWidth / cellHeight;
   }

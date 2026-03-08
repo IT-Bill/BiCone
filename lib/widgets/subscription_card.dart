@@ -30,18 +30,18 @@ class _SubscriptionCardState extends State<SubscriptionCard> {
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: _isHovered
               ? CupertinoColors.systemGrey5.resolveFrom(context)
               : CupertinoColors.systemBackground.resolveFrom(context),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.14 : 0.08),
-              blurRadius: _isHovered ? 10 : 6,
-              offset: Offset(0, _isHovered ? 2 : 1),
+              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.08 : 0.04),
+              blurRadius: _isHovered ? 12 : 8,
+              offset: Offset(0, _isHovered ? 4 : 2),
             ),
           ],
         ),

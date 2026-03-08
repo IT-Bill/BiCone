@@ -30,7 +30,11 @@ class SettingsPage extends StatelessWidget {
               children: [
                 // ── Account ──
                 CupertinoListSection.insetGrouped(
-                  header: const Text('账号'),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  header: const Padding(
+                    padding: EdgeInsets.only(left: 4, bottom: 4),
+                    child: Text('账号', style: TextStyle(fontSize: 16)),
+                  ),
                   children: [
                     CupertinoListTile(
                       leading: _buildAvatar(auth),
@@ -51,7 +55,11 @@ class SettingsPage extends StatelessWidget {
 
                 // ── Monitor ──
                 CupertinoListSection.insetGrouped(
-                  header: const Text('监控'),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  header: const Padding(
+                    padding: EdgeInsets.only(left: 4, bottom: 4),
+                    child: Text('监控', style: TextStyle(fontSize: 16)),
+                  ),
                   children: [
                     CupertinoListTile(
                       title: const Text('自动监控'),
@@ -110,7 +118,11 @@ class SettingsPage extends StatelessWidget {
 
                 // ── Download ──
                 CupertinoListSection.insetGrouped(
-                  header: const Text('下载'),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  header: const Padding(
+                    padding: EdgeInsets.only(left: 4, bottom: 4),
+                    child: Text('下载', style: TextStyle(fontSize: 16)),
+                  ),
                   children: [
                     CupertinoListTile(
                       title: const Text('视频质量'),
@@ -153,7 +165,11 @@ class SettingsPage extends StatelessWidget {
 
                 // ── About ──
                 CupertinoListSection.insetGrouped(
-                  header: const Text('关于'),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  header: const Padding(
+                    padding: EdgeInsets.only(left: 4, bottom: 4),
+                    child: Text('关于', style: TextStyle(fontSize: 16)),
+                  ),
                   children: [
                     CupertinoListTile(
                       leading: const Icon(CupertinoIcons.chat_bubble_text,

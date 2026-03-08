@@ -108,7 +108,7 @@ class _ActiveDownloads extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
           itemCount: tasks.length,
           itemBuilder: (context, index) {
             final task = tasks[index];
@@ -118,7 +118,14 @@ class _ActiveDownloads extends StatelessWidget {
               decoration: BoxDecoration(
                 color: CupertinoColors.systemBackground
                     .resolveFrom(context),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGrey.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,34 +384,33 @@ class _CompletedDownloads extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
           itemCount: completed.length,
           itemBuilder: (context, index) {
             final video = completed[index];
             return Container(
-              margin: const EdgeInsets.only(bottom: 1),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                 color: CupertinoColors.systemBackground
                     .resolveFrom(context),
-                borderRadius: index == 0 && completed.length == 1
-                    ? BorderRadius.circular(12)
-                    : index == 0
-                        ? const BorderRadius.vertical(
-                            top: Radius.circular(12))
-                        : index == completed.length - 1
-                            ? const BorderRadius.vertical(
-                                bottom: Radius.circular(12))
-                            : BorderRadius.zero,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGrey.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: CupertinoListTile(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 leading: Icon(CupertinoIcons.checkmark_alt_circle_fill,
-                    color: CupertinoColors.activeGreen
-                        .resolveFrom(context)),
+                    color: CupertinoTheme.of(context).primaryColor),
                 title: Text(
                   video.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 15),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   '${video.author}  ${_formatFileSize(video.fileSize)}  ${_formatDownloadedAt(video.downloadedAt)}',

@@ -321,27 +321,27 @@ class _HomePageState extends State<HomePage> {
             right: 20,
             bottom: MediaQuery.of(context).padding.bottom + 12,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(32),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
                 child: Container(
                   height: 64,
                   decoration: BoxDecoration(
                     color: CupertinoColors.systemBackground
                         .resolveFrom(context)
-                        .withValues(alpha: 0.72),
-                    borderRadius: BorderRadius.circular(28),
+                        .withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(32),
                     border: Border.all(
                       color: CupertinoColors.systemGrey4
                           .resolveFrom(context)
-                          .withValues(alpha: 0.3),
+                          .withValues(alpha: 0.4),
                       width: 0.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: CupertinoColors.black.withValues(alpha: 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
+                        color: CupertinoColors.black.withValues(alpha: 0.05),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),

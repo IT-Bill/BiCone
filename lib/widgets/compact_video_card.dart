@@ -48,11 +48,11 @@ class _CompactVideoCardState extends State<CompactVideoCard> {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: CupertinoColors.systemBackground.resolveFrom(context),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.2 : 0.1),
-              blurRadius: _isHovered ? 12 : 8,
+              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.12 : 0.06),
+              blurRadius: _isHovered ? 16 : 10,
               offset: Offset(0, _isHovered ? 4 : 2),
             ),
           ],
@@ -91,26 +91,26 @@ class _CompactVideoCardState extends State<CompactVideoCard> {
 
           Padding(
             padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ── Title (fixed 2-line height) ──
                 SizedBox(
-                  height: 12 * 2 * 1.4,
+                  height: 13 * 2 * 1.3,
                   child: Text(
                     video.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      height: 1.4,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
                     ),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 // ── Author ──
                 Text(
                   video.author,
