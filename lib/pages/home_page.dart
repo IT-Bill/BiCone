@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show LinearProgressIndicator;
+import 'package:flutter/material.dart' show LinearProgressIndicator, Material, NavigationRail, NavigationRailDestination, NavigationRailLabelType;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
@@ -203,6 +204,106 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width >= 720;
+
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.digit1, control: true): () => _switchTab(0),
+        const SingleActivator(LogicalKeyboardKey.digit2, control: true): () => _switchTab(1),
+        const SingleActivator(LogicalKeyboardKey.digit3, control: true): () => _switchTab(2),
+        const SingleActivator(LogicalKeyboardKey.digit4, control: true): () => _switchTab(3),
+        const SingleActivator(LogicalKeyboardKey.keyR, control: true): () {
+          context.read<MonitorService>().checkForNewVideos();
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: isWide ? _buildDesktopLayout(context) : _buildMobileLayout(context),
+      ),
+    );
+  }
+
+  void _switchTab(int index) {
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+    }
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return CupertinoPageScaffold(
+      child: Row(
+        children: [
+          // ── Left NavigationRail ──
+          Material(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(
+                    color: CupertinoColors.systemGrey4
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: NavigationRail(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: _switchTab,
+              labelType: NavigationRailLabelType.all,
+              backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
+              selectedIconTheme: const IconThemeData(color: AppTheme.biliPink),
+              unselectedIconTheme: IconThemeData(
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
+              selectedLabelTextStyle: const TextStyle(
+                color: AppTheme.biliPink,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelTextStyle: TextStyle(
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                fontSize: 12,
+              ),
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(CupertinoIcons.play_rectangle),
+                  selectedIcon: Icon(CupertinoIcons.play_rectangle_fill),
+                  label: Text('视频'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(CupertinoIcons.person_2),
+                  selectedIcon: Icon(CupertinoIcons.person_2_fill),
+                  label: Text('订阅'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(CupertinoIcons.arrow_down_circle),
+                  selectedIcon: Icon(CupertinoIcons.arrow_down_circle_fill),
+                  label: Text('下载'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(CupertinoIcons.gear),
+                  selectedIcon: Icon(CupertinoIcons.gear_solid),
+                  label: Text('设置'),
+                ),
+              ],
+            ),
+          ),
+          ),  // closes Material
+          // ── Page content ──
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
     return CupertinoPageScaffold(
       child: Stack(
         children: [
@@ -275,11 +376,7 @@ class _HomePageState extends State<HomePage> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        if (_currentIndex != index) {
-          setState(() => _currentIndex = index);
-        }
-      },
+      onTap: () => _switchTab(index),
       child: SizedBox(
         width: 60,
         child: Column(

@@ -44,15 +44,25 @@ class VideoGrid extends StatelessWidget {
       );
     }
 
-    return CustomScrollView(
-      slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: () => context.read<MonitorService>().checkForNewVideos(),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 100),
-          sliver: SliverGrid(
-            delegate: SliverChildBuilderDelegate(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width < 500 ? 2 : width < 800 ? 3 : width < 1100 ? 4 : 5;
+        final isDesktop = width >= 720;
+        final padding = isDesktop
+            ? const EdgeInsets.fromLTRB(16, 16, 16, 24)
+            : const EdgeInsets.fromLTRB(8, 8, 8, 100);
+
+        Widget scrollView = CustomScrollView(
+          slivers: [
+            if (!isDesktop)
+              CupertinoSliverRefreshControl(
+                onRefresh: () => context.read<MonitorService>().checkForNewVideos(),
+              ),
+            SliverPadding(
+              padding: padding,
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final video = videos[index];
                 final dl = context.read<DownloadService>();
@@ -128,15 +138,19 @@ class VideoGrid extends StatelessWidget {
               },
               childCount: videos.length,
             ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: isDesktop ? 12 : 8,
+              mainAxisSpacing: isDesktop ? 12 : 8,
               childAspectRatio: 0.98,
             ),
           ),
         ),
       ],
+    );
+
+        return scrollView;
+      },
     );
   }
 

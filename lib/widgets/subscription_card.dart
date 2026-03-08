@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/subscription.dart';
 
-class SubscriptionCard extends StatelessWidget {
+class SubscriptionCard extends StatefulWidget {
   final Subscription subscription;
   final VoidCallback? onMore;
 
@@ -13,21 +13,38 @@ class SubscriptionCard extends StatelessWidget {
   });
 
   @override
+  State<SubscriptionCard> createState() => _SubscriptionCardState();
+}
+
+class _SubscriptionCardState extends State<SubscriptionCard> {
+  bool _isHovered = false;
+
+  Subscription get subscription => widget.subscription;
+  VoidCallback? get onMore => widget.onMore;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _isHovered
+              ? CupertinoColors.systemGrey5.resolveFrom(context)
+              : CupertinoColors.systemBackground.resolveFrom(context),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.14 : 0.08),
+              blurRadius: _isHovered ? 10 : 6,
+              offset: Offset(0, _isHovered ? 2 : 1),
+            ),
+          ],
+        ),
       child: Row(
         children: [
           // ── Avatar ──
@@ -138,6 +155,7 @@ class SubscriptionCard extends StatelessWidget {
             ),
         ],
       ),
+    ),  // closes MouseRegion
     );
   }
 }

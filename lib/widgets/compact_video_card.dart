@@ -6,7 +6,7 @@ import '../theme.dart';
 import 'image_preview.dart';
 import 'video_card_utils.dart';
 
-class CompactVideoCard extends StatelessWidget {
+class CompactVideoCard extends StatefulWidget {
   final VideoItem video;
   final VoidCallback? onDownload;
   final VoidCallback? onDelete;
@@ -25,20 +25,40 @@ class CompactVideoCard extends StatelessWidget {
   });
 
   @override
+  State<CompactVideoCard> createState() => _CompactVideoCardState();
+}
+
+class _CompactVideoCardState extends State<CompactVideoCard> {
+  bool _isHovered = false;
+
+  VideoItem get video => widget.video;
+  VoidCallback? get onDownload => widget.onDownload;
+  VoidCallback? get onDelete => widget.onDelete;
+  VoidCallback? get onRestore => widget.onRestore;
+  VoidCallback? get onPlay => widget.onPlay;
+  DownloadTask? get downloadTask => widget.downloadTask;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.2 : 0.1),
+              blurRadius: _isHovered ? 12 : 8,
+              offset: Offset(0, _isHovered ? 4 : 2),
+            ),
+          ],
+        ),
+        transform: _isHovered ? (Matrix4.identity()..setTranslationRaw(0.0, -2.0, 0.0)) : Matrix4.identity(),
+        clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -125,6 +145,7 @@ class CompactVideoCard extends StatelessWidget {
           ),
         ],
       ),
+    ),  // closes MouseRegion
     );
   }
 

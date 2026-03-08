@@ -1,5 +1,7 @@
-﻿import 'package:flutter/cupertino.dart';
+﻿import 'dart:io' show Platform;
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 import 'app.dart';
 import 'services/storage_service.dart';
 import 'services/auth_service.dart';
@@ -9,8 +11,26 @@ import 'services/monitor_service.dart';
 import 'services/notification_service.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+bool get isDesktop =>
+    Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Desktop window management
+  if (isDesktop) {
+    await windowManager.ensureInitialized();
+    const windowOptions = WindowOptions(
+      size: Size(1280, 720),
+      minimumSize: Size(800, 600),
+      center: true,
+      title: 'BiCone',
+    );
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   // Initialize persistent storage
   final storage = StorageService();
