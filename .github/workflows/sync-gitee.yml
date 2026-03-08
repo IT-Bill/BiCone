@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: sync-gitee-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   sync-to-gitee:
     runs-on: ubuntu-latest
@@ -30,23 +34,30 @@ jobs:
             const headSha = context.payload.workflow_run.head_sha;
 
             const workflowFiles = ['prepare-release.yml', 'release-android.yml', 'release-windows.yml'];
+
             for (const file of workflowFiles) {
-              const { data: { workflow_runs: runs } } = await github.rest.actions.listWorkflowRuns({
-                owner, repo,
-                workflow_id: file,
-                head_sha: headSha,
-                status: 'completed',
-                per_page: 1,
-              });
+              const { data: { workflow_runs: runs } } =
+                await github.rest.actions.listWorkflowRuns({
+                  owner,
+                  repo,
+                  workflow_id: file,
+                  head_sha: headSha,
+                  status: 'completed',
+                  per_page: 1,
+                });
+
               if (!runs.length || runs[0].conclusion !== 'success') {
                 core.info(`${file} not yet successful, skipping sync`);
                 return;
               }
             }
+
             core.exportVariable('ALL_DONE', 'true');
             core.exportVariable('RELEASE_TAG', context.payload.workflow_run.head_branch);
+
       - name: Sync GitHub Repo to Gitee
-        uses: wearerequired/git-mirror-action@master
+        if: env.ALL_DONE == 'true'
+        uses: wearerequired/git-mirror-action@v1
         env:
           SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
         with:
@@ -58,28 +69,124 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+        shell: bash
         run: |
+          set -euo pipefail
+
           TAG="${RELEASE_TAG}"
           VERSION="${TAG#v}"
           IPA_NAME="BiCone-${VERSION}-unsigned.ipa"
+
           echo "Waiting for ${IPA_NAME} on release ${TAG}..."
           for i in $(seq 1 10); do
-            if gh release view "$TAG" --json assets -q ".assets[].name" | grep -q "$IPA_NAME"; then
+            if gh api "repos/${GH_REPO}/releases/tags/${TAG}" --jq '.assets[].name' | grep -Fxq "$IPA_NAME"; then
               echo "IPA found on release!"
               exit 0
             fi
             echo "IPA not found yet, retrying in 30s... ($i/10)"
             sleep 30
           done
+
           echo "Warning: IPA not found after 5 minutes, syncing without it"
 
-      - name: Sync GitHub Release to Gitee
+      - name: Force sync current tag release to Gitee
         if: env.ALL_DONE == 'true'
-        uses: trustedinster/sync-release-gitee@v1.3
-        with:
-          gitee_owner: IT-Bill
-          gitee_repo: BiCone
-          gitee_token: ${{ secrets.GITEE_TOKEN }}
-          github_owner: IT-Bill
-          github_repo: BiCone
-          gitee_upload_retry_times: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_OWNER: IT-Bill
+          GITEE_REPO: BiCone
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${RELEASE_TAG}"
+          WORKDIR="$(mktemp -d)"
+          ASSET_DIR="${WORKDIR}/assets"
+          mkdir -p "${ASSET_DIR}"
+
+          echo "Fetching GitHub release for tag ${TAG}..."
+          gh api "repos/${GH_REPO}/releases/tags/${TAG}" > "${WORKDIR}/github_release.json"
+
+          python3 - <<'PY' "${WORKDIR}/github_release.json" "${WORKDIR}"
+          import json, sys, pathlib
+
+          data = json.load(open(sys.argv[1], encoding='utf-8'))
+          wd = pathlib.Path(sys.argv[2])
+
+          (wd / "name.txt").write_text((data.get("name") or data["tag_name"]) + "\n", encoding="utf-8")
+          (wd / "body.txt").write_text((data.get("body") or "-"), encoding="utf-8")
+          (wd / "target_commitish.txt").write_text((data.get("target_commitish") or "master") + "\n", encoding="utf-8")
+
+          with open(wd / "assets.txt", "w", encoding="utf-8") as f:
+              for asset in data.get("assets", []):
+                  f.write(asset["name"] + "\n")
+          PY
+
+          NAME="$(tr -d '\n' < "${WORKDIR}/name.txt")"
+          TARGET_COMMITISH="$(tr -d '\n' < "${WORKDIR}/target_commitish.txt")"
+
+          echo "GitHub release name: ${NAME}"
+          echo "GitHub target_commitish: ${TARGET_COMMITISH}"
+
+          echo "Checking whether Gitee release ${TAG} already exists..."
+          HTTP_CODE="$(curl -sS -o "${WORKDIR}/gitee_release.json" -w "%{http_code}" \
+            "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")"
+
+          if [ "${HTTP_CODE}" = "200" ]; then
+            RELEASE_ID="$(python3 - <<'PY' "${WORKDIR}/gitee_release.json"
+          import json, sys
+          print(json.load(open(sys.argv[1], encoding='utf-8'))["id"])
+          PY
+          )"
+            echo "Existing Gitee release found: ${RELEASE_ID}, deleting it first..."
+            curl -sS --fail -X DELETE \
+              "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${RELEASE_ID}?access_token=${GITEE_TOKEN}" \
+              >/dev/null
+          elif [ "${HTTP_CODE}" != "404" ]; then
+            echo "Unexpected response from Gitee:"
+            cat "${WORKDIR}/gitee_release.json"
+            exit 1
+          fi
+
+          echo "Creating fresh Gitee release for ${TAG}..."
+          curl -sS --fail \
+            -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases" \
+            --data-urlencode "access_token=${GITEE_TOKEN}" \
+            --data-urlencode "tag_name=${TAG}" \
+            --data-urlencode "name=${NAME}" \
+            --data-urlencode "body@${WORKDIR}/body.txt" \
+            --data-urlencode "target_commitish=${TARGET_COMMITISH}" \
+            > "${WORKDIR}/created_release.json"
+
+          NEW_RELEASE_ID="$(python3 - <<'PY' "${WORKDIR}/created_release.json"
+          import json, sys
+          print(json.load(open(sys.argv[1], encoding='utf-8'))["id"])
+          PY
+          )"
+
+          echo "Created Gitee release id: ${NEW_RELEASE_ID}"
+
+          if [ ! -s "${WORKDIR}/assets.txt" ]; then
+            echo "No assets found on GitHub release ${TAG}, done."
+            exit 0
+          fi
+
+          echo "Downloading and uploading assets for ${TAG} only..."
+          while IFS= read -r asset; do
+            [ -n "${asset}" ] || continue
+
+            echo "Downloading ${asset} ..."
+            rm -f "${ASSET_DIR}/${asset}"
+            gh release download "${TAG}" --pattern "${asset}" --dir "${ASSET_DIR}"
+
+            echo "Uploading ${asset} ..."
+            curl -sS --fail \
+              -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${NEW_RELEASE_ID}/attach_files" \
+              -F "access_token=${GITEE_TOKEN}" \
+              -F "file=@${ASSET_DIR}/${asset}" \
+              >/dev/null
+          done < "${WORKDIR}/assets.txt"
+
+          echo "Release ${TAG} synced to Gitee successfully."
