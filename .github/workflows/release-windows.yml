@@ -40,7 +40,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
-          iscc /DMyAppVersion=$version installer\windows\setup.iss
+          iscc /DMyAppVersion=$version windows\setup.iss
 
       - name: Upload to GitHub Release
         env:
@@ -51,5 +51,5 @@ jobs:
           $tag = "${{ github.ref_name }}"
           gh release upload $tag `
             "BiCone-${version}-windows-x64.zip" `
-            "installer/windows/BiCone-${version}-windows-x64-setup.exe" `
+            "windows/BiCone-${version}-windows-x64-setup.exe" `
             --repo ${{ github.repository }} --clobber

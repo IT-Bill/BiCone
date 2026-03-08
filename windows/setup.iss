@@ -1,4 +1,4 @@
-#define MySourceDir "..\..\build\windows\x64\runner\Release"
+#define MySourceDir "..\build\windows\x64\runner\Release"
 
 [Setup]
 AppName=BiCone
