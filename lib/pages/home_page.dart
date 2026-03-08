@@ -143,13 +143,13 @@ class _HomePageState extends State<HomePage> {
             children: [
               ValueListenableBuilder<double?>(
                 valueListenable: valueNotifier,
-                builder: (_, value, __) =>
+                builder: (_, value, _) =>
                     LinearProgressIndicator(value: value),
               ),
               const SizedBox(height: 8),
               ValueListenableBuilder<String>(
                 valueListenable: progressNotifier,
-                builder: (_, text, __) =>
+                builder: (_, text, _) =>
                     Text(text, style: const TextStyle(fontSize: 13)),
               ),
             ],

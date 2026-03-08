@@ -1,6 +1,6 @@
 <h1 align="center">BiCone</h1>
 
-<p align="center"><b>Bilibili 專屬的「防失效」追更神器</b></p>
+<p align="center"><b>Bilibili 專屬的「防失效」追更工具</b></p>
 <p align="center">一鍵訂閱 ⚡ 自動監測 ⚡ 更新通知 ⚡ 自動快取</p>
 <p align="center">不錯過 UP 主的每一次更新，徹底告別「影片已失效」的遺憾。</p>
 

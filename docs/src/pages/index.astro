@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="BiCone — Bilibili 防失效追更神器">
+<Layout title="BiCone — Bilibili 防失效追更工具">
   <!-- Navigation -->
   <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 border-b border-black/5">
     <div class="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between">
@@ -145,37 +145,58 @@ import Layout from '../layouts/Layout.astro';
 
   <!-- How it works -->
   <section id="quickstart" class="py-24 sm:py-32">
-    <div class="max-w-4xl mx-auto px-6">
+    <div class="max-w-6xl mx-auto px-6">
       <div class="text-center mb-16">
-        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">三步开始使用</h2>
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-text-primary">四步开始使用</h2>
         <p class="mt-4 text-text-secondary text-lg">简单到不需要教程</p>
       </div>
 
-      <div class="space-y-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         <!-- Step 1 -->
-        <div class="flex gap-6 items-start">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">1</div>
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-2">扫码登录</h3>
-            <p class="text-text-secondary leading-relaxed">打开 BiCone，使用 Bilibili 手机客户端扫码登录，获取视频下载所需的权限。</p>
+        <div class="flex flex-col items-center text-center">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm mb-4">1</div>
+          <h3 class="text-xl font-semibold text-text-primary mb-2">扫码登录</h3>
+          <p class="text-text-secondary leading-relaxed text-sm mb-4">打开 BiCone，使用 Bilibili 手机客户端扫码登录，获取视频下载所需的权限。</p>
+          <div class="w-full aspect-9/16 rounded-xl bg-surface-alt border border-black/5 overflow-hidden">
+            <video class="w-full h-full object-cover" muted playsinline loop poster="/videos/step1-poster.svg">
+              <source src="/videos/step1-login.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
 
         <!-- Step 2 -->
-        <div class="flex gap-6 items-start">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">2</div>
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-2">添加订阅</h3>
-            <p class="text-text-secondary leading-relaxed">进入订阅页面，输入 UP 主的 UID（在 UP 主主页 URL 中可以找到），即可开始监测。</p>
+        <div class="flex flex-col items-center text-center">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm mb-4">2</div>
+          <h3 class="text-xl font-semibold text-text-primary mb-2">添加订阅</h3>
+          <p class="text-text-secondary leading-relaxed text-sm mb-4">进入订阅页面，输入 UP 主的 UID（在 UP 主主页 URL 中可以找到），即可开始监测。</p>
+          <div class="w-full aspect-9/16 rounded-xl bg-surface-alt border border-black/5 overflow-hidden">
+            <video class="w-full h-full object-cover" muted playsinline loop poster="/videos/step2-poster.svg">
+              <source src="/videos/step2-subscribe.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
 
         <!-- Step 3 -->
-        <div class="flex gap-6 items-start">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm">3</div>
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-2">坐等更新</h3>
-            <p class="text-text-secondary leading-relaxed">开启自动下载后，BiCone 会在后台持续监测并自动缓存新视频。你只需要打开就能看。</p>
+        <div class="flex flex-col items-center text-center">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm mb-4">3</div>
+          <h3 class="text-xl font-semibold text-text-primary mb-2">开启后台权限</h3>
+          <p class="text-text-secondary leading-relaxed text-sm mb-4">在系统设置中为 BiCone 开启后台无限制和自启动权限，防止省电策略中断监测服务。</p>
+          <div class="w-full aspect-9/16 rounded-xl bg-surface-alt border border-black/5 overflow-hidden">
+            <video class="w-full h-full object-cover" muted playsinline loop poster="/videos/step3-poster.svg">
+              <source src="/videos/step3-background.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flex flex-col items-center text-center">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-bilipink text-white flex items-center justify-center font-semibold text-sm mb-4">4</div>
+          <h3 class="text-xl font-semibold text-text-primary mb-2">坐等更新</h3>
+          <p class="text-text-secondary leading-relaxed text-sm mb-4">开启自动下载后，BiCone 会在后台持续监测并自动缓存新视频。你只需要打开就能看。</p>
+          <div class="w-full aspect-9/16 rounded-xl bg-surface-alt border border-black/5 overflow-hidden">
+            <video class="w-full h-full object-cover" muted playsinline loop poster="/videos/step4-poster.svg">
+              <source src="/videos/step4-enjoy.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
       </div>
