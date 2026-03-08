@@ -167,7 +167,7 @@ class SettingsPage extends StatelessWidget {
                     const CupertinoListTile(
                       leading: Icon(CupertinoIcons.paw),
                       title: Text('BiCone'),
-                      additionalInfo: Text('0.2.7'),
+                      additionalInfo: Text('0.3.6'),
                     ),
                   ],
                 ),
