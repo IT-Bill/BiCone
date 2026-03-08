@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show LinearProgressIndicator;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_service.dart';
@@ -190,10 +191,15 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const CupertinoListTile(
-                      leading: Icon(CupertinoIcons.paw),
-                      title: Text('BiCone'),
-                      additionalInfo: Text('0.3.6'),
+                    CupertinoListTile(
+                      leading: const Icon(CupertinoIcons.paw),
+                      title: const Text('BiCone'),
+                      additionalInfo: FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          return Text(snapshot.data?.version ?? '');
+                        },
+                      ),
                     ),
                   ],
                 ),
