@@ -131,40 +131,89 @@ jobs:
           echo "GitHub target_commitish: ${TARGET_COMMITISH}"
 
           echo "Checking whether Gitee release ${TAG} already exists..."
-          HTTP_CODE="$(curl -sS -o "${WORKDIR}/gitee_release.json" -w "%{http_code}" \
+          HTTP_CODE="$(curl -sS \
+            -o "${WORKDIR}/gitee_release.json" \
+            -w "%{http_code}" \
             "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")"
 
-          if [ "${HTTP_CODE}" = "200" ]; then
-            RELEASE_ID="$(python3 - <<'PY' "${WORKDIR}/gitee_release.json"
+          echo "Gitee query HTTP status: ${HTTP_CODE}"
+          echo "Gitee query response:"
+          cat "${WORKDIR}/gitee_release.json"
+          echo
+
+          RELEASE_ID="$(
+          python3 - <<'PY' "${WORKDIR}/gitee_release.json"
           import json, sys
-          print(json.load(open(sys.argv[1], encoding='utf-8'))["id"])
+
+          try:
+              data = json.load(open(sys.argv[1], encoding='utf-8'))
+          except Exception:
+              print("")
+              raise
+
+          if isinstance(data, dict) and data.get("id"):
+              print(data["id"])
+          else:
+              print("")
           PY
           )"
+
+          if [ "${HTTP_CODE}" = "200" ] && [ -n "${RELEASE_ID}" ]; then
             echo "Existing Gitee release found: ${RELEASE_ID}, deleting it first..."
             curl -sS --fail -X DELETE \
               "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${RELEASE_ID}?access_token=${GITEE_TOKEN}" \
               >/dev/null
-          elif [ "${HTTP_CODE}" != "404" ]; then
-            echo "Unexpected response from Gitee:"
-            cat "${WORKDIR}/gitee_release.json"
+            for i in $(seq 1 10); do
+              CHECK_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
+                "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")"
+              if [ "${CHECK_CODE}" = "404" ]; then
+                echo "Confirmed old release is gone."
+                break
+              fi
+              echo "Waiting Gitee release deletion to settle... ($i/10)"
+              sleep 3
+            done
+          elif [ "${HTTP_CODE}" = "200" ] && [ -z "${RELEASE_ID}" ]; then
+            echo "Gitee returned 200 but no valid release object for tag ${TAG}; treating as not found."
+          elif [ "${HTTP_CODE}" = "404" ]; then
+            echo "Gitee release ${TAG} does not exist yet."
+          else
+            echo "Unexpected response from Gitee when querying release by tag."
             exit 1
           fi
 
           echo "Creating fresh Gitee release for ${TAG}..."
-          curl -sS --fail \
+          CREATE_HTTP_CODE="$(curl -sS \
+            -o "${WORKDIR}/created_release.json" \
+            -w "%{http_code}" \
             -X POST "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases" \
             --data-urlencode "access_token=${GITEE_TOKEN}" \
             --data-urlencode "tag_name=${TAG}" \
             --data-urlencode "name=${NAME}" \
             --data-urlencode "body@${WORKDIR}/body.txt" \
-            --data-urlencode "target_commitish=${TARGET_COMMITISH}" \
-            > "${WORKDIR}/created_release.json"
+            --data-urlencode "target_commitish=${TARGET_COMMITISH}")"
 
-          NEW_RELEASE_ID="$(python3 - <<'PY' "${WORKDIR}/created_release.json"
+          echo "Gitee create HTTP status: ${CREATE_HTTP_CODE}"
+          echo "Gitee create response:"
+          cat "${WORKDIR}/created_release.json"
+          echo
+
+          NEW_RELEASE_ID="$(
+          python3 - <<'PY' "${WORKDIR}/created_release.json"
           import json, sys
-          print(json.load(open(sys.argv[1], encoding='utf-8'))["id"])
+
+          data = json.load(open(sys.argv[1], encoding='utf-8'))
+          if isinstance(data, dict) and data.get("id"):
+              print(data["id"])
+          else:
+              print("")
           PY
           )"
+
+          if [ -z "${NEW_RELEASE_ID}" ]; then
+            echo "Failed to create Gitee release for ${TAG}"
+            exit 1
+          fi
 
           echo "Created Gitee release id: ${NEW_RELEASE_ID}"
 
