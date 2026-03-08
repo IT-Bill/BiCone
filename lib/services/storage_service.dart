@@ -318,4 +318,27 @@ class StorageService extends ChangeNotifier {
     await _settingsBox.put('rssMode', mode);
     notifyListeners();
   }
+
+  /// Update source: 'gitee' (default) or 'github'
+  String get updateSource =>
+      _settingsBox.get('updateSource', defaultValue: 'gitee');
+  Future<void> setUpdateSource(String source) async {
+    await _settingsBox.put('updateSource', source);
+    notifyListeners();
+  }
+
+  /// Last update check time (ISO 8601 string, or empty)
+  String get lastUpdateCheck =>
+      _settingsBox.get('lastUpdateCheck', defaultValue: '');
+  Future<void> setLastUpdateCheck(DateTime time) async {
+    await _settingsBox.put('lastUpdateCheck', time.toIso8601String());
+    notifyListeners();
+  }
+
+  /// Version the user chose to skip (e.g. '0.4.0'). Empty means no skip.
+  String get skippedVersion =>
+      _settingsBox.get('skippedVersion', defaultValue: '');
+  Future<void> setSkippedVersion(String version) async {
+    await _settingsBox.put('skippedVersion', version);
+  }
 }

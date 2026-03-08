@@ -1,10 +1,13 @@
 import 'dart:io' show Platform;
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator;
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/monitor_service.dart';
+import '../services/update_service.dart';
 import 'login_page.dart';
 import 'feedback_page.dart';
 
@@ -163,6 +166,29 @@ class SettingsPage extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
+                    GestureDetector(
+                      onLongPress: () => _showSourcePicker(context, storage),
+                      child: CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.arrow_clockwise,
+                            color: CupertinoColors.activeGreen),
+                        title: const Text('检查更新'),
+                        subtitle: Text(
+                          '长按切换源，${_formatLastCheck(storage.lastUpdateCheck)}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        additionalInfo: Text(
+                          storage.updateSource == 'github' ? 'GitHub' : 'Gitee',
+                        ),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: () => _doCheckUpdate(
+                          context,
+                          storage.updateSource == 'github'
+                              ? UpdateSource.github
+                              : UpdateSource.gitee,
+                          storage,
+                        ),
+                      ),
                     ),
                     const CupertinoListTile(
                       leading: Icon(CupertinoIcons.paw),
@@ -438,6 +464,236 @@ class SettingsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(ctx),
           child: const Text('取消'),
         ),
+      ),
+    );
+  }
+
+  String _formatLastCheck(String isoString) {
+    if (isoString.isEmpty) return '尚未检查';
+    try {
+      final dt = DateTime.parse(isoString);
+      return '上次检查 ${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '尚未检查';
+    }
+  }
+
+  void _showSourcePicker(BuildContext context, StorageService storage) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: const Text('选择更新源'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              storage.setUpdateSource('github');
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              'GitHub',
+              style: TextStyle(
+                fontWeight: storage.updateSource == 'github'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              storage.setUpdateSource('gitee');
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              'Gitee（国内推荐）',
+              style: TextStyle(
+                fontWeight: storage.updateSource == 'gitee'
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
+  void _doCheckUpdate(BuildContext context, UpdateSource source, StorageService storage) async {
+    // Show loading
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CupertinoActivityIndicator(radius: 16)),
+    );
+
+    try {
+      final currentVersion = await UpdateService.getCurrentVersion();
+      final release = await UpdateService.checkForUpdate(source);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // dismiss loading
+      storage.setLastUpdateCheck(DateTime.now());
+
+      if (release == null) {
+        _showSimpleDialog(context, '检查失败', '无法获取版本信息，请检查网络连接。');
+        return;
+      }
+
+      if (!UpdateService.isNewer(currentVersion, release.version)) {
+        _showSimpleDialog(context, '已是最新版本',
+            '当前版本 $currentVersion 已是最新。');
+        return;
+      }
+
+      // Show update dialog with changelog
+      _showUpdateDialog(context, currentVersion, release, source);
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // dismiss loading
+        _showSimpleDialog(context, '检查失败', '发生错误: $e');
+      }
+    }
+  }
+
+  void _showUpdateDialog(BuildContext context, String currentVersion,
+      ReleaseInfo release, UpdateSource source) {
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text('发现新版本 ${release.version}'),
+        content: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('当前版本: $currentVersion',
+                  style: const TextStyle(fontSize: 13)),
+            ),
+            if (release.changelog.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: SingleChildScrollView(
+                  child: Text(
+                    release.changelog,
+                    style: const TextStyle(fontSize: 13),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('稍后'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              _downloadAndInstall(context, release);
+            },
+            child: const Text('立即更新'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadAndInstall(BuildContext context, ReleaseInfo release) async {
+    final cancelToken = CancelToken();
+    final progressNotifier = ValueNotifier<String>('准备下载...');
+    final valueNotifier = ValueNotifier<double?>(null);
+
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('正在下载更新'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            children: [
+              ValueListenableBuilder<double?>(
+                valueListenable: valueNotifier,
+                builder: (_, value, _) => LinearProgressIndicator(value: value),
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<String>(
+                valueListenable: progressNotifier,
+                builder: (_, text, _) => Text(text,
+                    style: const TextStyle(fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              cancelToken.cancel();
+              Navigator.pop(ctx);
+            },
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+
+    try {
+      final filePath = await UpdateService.downloadUpdate(
+        release.downloadUrl,
+        onProgress: (received, total) {
+          if (total > 0) {
+            valueNotifier.value = received / total;
+            progressNotifier.value =
+                '${(received / 1024 / 1024).toStringAsFixed(1)} / '
+                '${(total / 1024 / 1024).toStringAsFixed(1)} MB';
+          }
+        },
+        cancelToken: cancelToken,
+      );
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // dismiss download dialog
+
+      await UpdateService.installUpdate(filePath);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) return;
+      if (context.mounted) {
+        Navigator.pop(context);
+        _showSimpleDialog(context, '下载失败', '下载更新包失败: $e');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        _showSimpleDialog(context, '下载失败', '下载更新包失败: $e');
+      }
+    } finally {
+      progressNotifier.dispose();
+      valueNotifier.dispose();
+    }
+  }
+
+  void _showSimpleDialog(BuildContext context, String title, String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(message),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('确定'),
+          ),
+        ],
       ),
     );
   }

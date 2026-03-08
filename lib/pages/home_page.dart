@@ -1,7 +1,11 @@
 import 'dart:ui';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator;
 import 'package:provider/provider.dart';
 import '../services/monitor_service.dart';
+import '../services/storage_service.dart';
+import '../services/update_service.dart';
 import '../theme.dart';
 import 'feed_page.dart';
 import 'subscriptions_page.dart';
@@ -30,7 +34,171 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MonitorService>().startMonitoring();
+      _checkUpdateOnFirstLaunchOfDay();
     });
+  }
+
+  /// Check for updates once per day on first app launch.
+  /// If the user previously skipped this version, don't prompt again.
+  Future<void> _checkUpdateOnFirstLaunchOfDay() async {
+    final storage = context.read<StorageService>();
+
+    // Only check once per calendar day
+    final lastCheck = storage.lastUpdateCheck;
+    if (lastCheck.isNotEmpty) {
+      try {
+        final lastDate = DateTime.parse(lastCheck);
+        final now = DateTime.now();
+        if (lastDate.year == now.year &&
+            lastDate.month == now.month &&
+            lastDate.day == now.day) {
+          return; // Already checked today
+        }
+      } catch (_) {}
+    }
+
+    final source = storage.updateSource == 'github'
+        ? UpdateSource.github
+        : UpdateSource.gitee;
+
+    try {
+      final currentVersion = await UpdateService.getCurrentVersion();
+      final release = await UpdateService.checkForUpdate(source);
+      storage.setLastUpdateCheck(DateTime.now());
+
+      if (release == null) return;
+      if (!UpdateService.isNewer(currentVersion, release.version)) return;
+
+      // If user previously skipped this exact version, don't prompt
+      if (storage.skippedVersion == release.version) return;
+
+      if (!mounted) return;
+      _showAutoUpdateDialog(currentVersion, release, storage);
+    } catch (_) {
+      // Silently ignore errors for background update checks
+    }
+  }
+
+  void _showAutoUpdateDialog(
+      String currentVersion, ReleaseInfo release, StorageService storage) {
+    showCupertinoDialog(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text('发现新版本 ${release.version}'),
+        content: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('当前版本: $currentVersion',
+                  style: const TextStyle(fontSize: 13)),
+            ),
+            if (release.changelog.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: SingleChildScrollView(
+                  child: Text(
+                    release.changelog,
+                    style: const TextStyle(fontSize: 13),
+                    textAlign: TextAlign.left,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              storage.setSkippedVersion(release.version);
+              Navigator.pop(ctx);
+            },
+            child: const Text('跳过此版本'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(ctx);
+              _downloadAndInstall(release);
+            },
+            child: const Text('立即更新'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadAndInstall(ReleaseInfo release) async {
+    final cancelToken = CancelToken();
+    final progressNotifier = ValueNotifier<String>('准备下载...');
+    final valueNotifier = ValueNotifier<double?>(null);
+
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('正在下载更新'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            children: [
+              ValueListenableBuilder<double?>(
+                valueListenable: valueNotifier,
+                builder: (_, value, __) =>
+                    LinearProgressIndicator(value: value),
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<String>(
+                valueListenable: progressNotifier,
+                builder: (_, text, __) =>
+                    Text(text, style: const TextStyle(fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              cancelToken.cancel();
+              Navigator.pop(ctx);
+            },
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+
+    try {
+      final filePath = await UpdateService.downloadUpdate(
+        release.downloadUrl,
+        onProgress: (received, total) {
+          if (total > 0) {
+            valueNotifier.value = received / total;
+            progressNotifier.value =
+                '${(received / 1024 / 1024).toStringAsFixed(1)} / '
+                '${(total / 1024 / 1024).toStringAsFixed(1)} MB';
+          }
+        },
+        cancelToken: cancelToken,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // dismiss download dialog
+
+      await UpdateService.installUpdate(filePath);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) return;
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      progressNotifier.dispose();
+      valueNotifier.dispose();
+    }
   }
 
   @override
