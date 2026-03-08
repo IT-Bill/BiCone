@@ -142,7 +142,7 @@ class VideoGrid extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: isDesktop ? 12 : 8,
               mainAxisSpacing: isDesktop ? 12 : 8,
-              childAspectRatio: 0.98,
+              childAspectRatio: _calculateAspectRatio(width, crossAxisCount, isDesktop ? 12 : 8, isDesktop ? 16 : 8),
             ),
           ),
         ),
@@ -152,6 +152,16 @@ class VideoGrid extends StatelessWidget {
         return scrollView;
       },
     );
+  }
+
+  double _calculateAspectRatio(double totalWidth, int crossAxisCount, double crossAxisSpacing, double horizontalPadding) {
+    final availableWidth = totalWidth - horizontalPadding * 2 - crossAxisSpacing * (crossAxisCount - 1);
+    final columnWidth = availableWidth / crossAxisCount;
+    final thumbnailHeight = columnWidth / (16 / 9);
+    // padding(6+6) + title 2 lines(12*1.4*2=33.6) + gap(2) + author(15) + gap(4) + actions(20) + buffer
+    const textAreaHeight = 90.0;
+    final cellHeight = thumbnailHeight + textAreaHeight;
+    return columnWidth / cellHeight;
   }
 
   void _confirmDelete(BuildContext context, VideoItem video) async {

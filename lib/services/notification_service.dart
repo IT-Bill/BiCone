@@ -92,12 +92,18 @@ class NotificationService {
   }
 
   /// Show or update the download progress notification.
+  /// On desktop (Windows/macOS/Linux), progress notifications are skipped
+  /// to avoid spamming system toast notifications.
   Future<void> showDownloadProgressNotification({
     required String title,
     required int progress,
     required String status,
   }) async {
     if (!_initialized) return;
+
+    // Desktop platforms don't support updating a notification in-place,
+    // so each call creates a new toast — skip progress updates entirely.
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) return;
 
     final androidDetails = AndroidNotificationDetails(
       'download_channel',
