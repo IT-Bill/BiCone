@@ -84,17 +84,20 @@ class MonitorService extends ChangeNotifier {
           await _storage.saveVideo(video);
           _newVideoCount++;
 
-          // Auto-download only videos published after the subscription was added
-          // and only if a download path has been set and downloads not paused
+          // Skip notifications and auto-download for videos published before
+          // the subscription was added — they are pre-existing, not "new".
+          final videoPubDate = _parseDate(video.pubDate);
+          if (videoPubDate != null && !videoPubDate.isAfter(sub.addedAt)) {
+            continue;
+          }
+
+          // Auto-download only if enabled, download path is set, and downloads not paused
           final willAutoDownload =
               _storage.autoDownload && _storage.downloadPath.isNotEmpty && !sub.downloadPaused;
           bool didStartDownload = false;
-          if (willAutoDownload) {
-            final videoPubDate = _parseDate(video.pubDate);
-            if (videoPubDate != null && videoPubDate.isAfter(sub.addedAt) && sub.matchesTitle(video.title)) {
-              await _downloadService.addDownload(video);
-              didStartDownload = true;
-            }
+          if (willAutoDownload && sub.matchesTitle(video.title)) {
+            await _downloadService.addDownload(video);
+            didStartDownload = true;
           }
 
           // Send local notification
