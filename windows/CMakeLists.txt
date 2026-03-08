@@ -106,3 +106,9 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundle ffmpeg.exe alongside the application executable.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_msys2.exe"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  RENAME "ffmpeg.exe"
+  COMPONENT Runtime)

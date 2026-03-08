@@ -41,6 +41,7 @@ void main() async {
   final api = ApiService(storage);
   final notification = NotificationService();
   await notification.init();
+
   final download = DownloadService(api, storage, notification);
   final monitor = MonitorService(storage, download, notification);
 

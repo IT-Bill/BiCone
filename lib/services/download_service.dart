@@ -736,8 +736,11 @@ class DownloadService extends ChangeNotifier {
           throw Exception('合并失败: ${e.message}');
         }
       } else {
-        // Windows / Linux: use system ffmpeg
-        final result = await Process.run('ffmpeg', [
+        // Windows / Linux: use bundled ffmpeg next to exe, fallback to system PATH
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        final bundled = File('$exeDir${Platform.pathSeparator}ffmpeg.exe');
+        final ffmpegPath = await bundled.exists() ? bundled.path : 'ffmpeg';
+        final result = await Process.run(ffmpegPath, [
           '-i', videoPath,
           '-i', audioPath,
           '-c', 'copy',
