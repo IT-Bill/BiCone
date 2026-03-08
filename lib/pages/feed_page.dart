@@ -256,28 +256,42 @@ class _FeedPageState extends State<FeedPage> {
           child: SafeArea(
             child: Column(
               children: [
-                // UP主 filter (scrollable segmented control)
+                // UP主 filter (scrollable chip bar)
                 if (upList.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: CupertinoSlidingSegmentedControl<int>(
-                        groupValue: _selectedUpMid,
-                        onValueChanged: (v) =>
-                            setState(() => _selectedUpMid = v ?? 0),
-                        children: {
-                          0: const Text('全部', style: TextStyle(fontSize: 13)),
-                          ...{
-                            for (final e in upList)
-                              e.key: Text(
-                                e.value,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
+                  SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      itemCount: upList.length + 1,
+                      separatorBuilder: (context, index) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final isAll = index == 0;
+                        final mid = isAll ? 0 : upList[index - 1].key;
+                        final label = isAll ? '全部' : upList[index - 1].value;
+                        final selected = _selectedUpMid == mid;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedUpMid = mid),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? CupertinoTheme.of(context).primaryColor
+                                  : CupertinoColors.systemGrey5.resolveFrom(context),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: selected
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.label.resolveFrom(context),
                               ),
-                          },
-                        },
-                      ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 // Video grid
