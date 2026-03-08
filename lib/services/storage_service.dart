@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/subscription.dart';
+import '../models/video_filter.dart';
 import '../models/video_item.dart';
 
 class StorageService extends ChangeNotifier {
@@ -340,5 +341,31 @@ class StorageService extends ChangeNotifier {
       _settingsBox.get('skippedVersion', defaultValue: '');
   Future<void> setSkippedVersion(String version) async {
     await _settingsBox.put('skippedVersion', version);
+  }
+
+  // ─── Saved Video Filters ──────────────────────────────
+
+  List<VideoFilter> get savedFilters {
+    final raw = _settingsBox.get('savedFilters');
+    if (raw == null) return [];
+    return (raw as List)
+        .map((e) => VideoFilter.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  Future<void> addSavedFilter(VideoFilter filter) async {
+    final list = savedFilters..add(filter);
+    await _settingsBox.put(
+        'savedFilters', list.map((f) => f.toJson()).toList());
+    notifyListeners();
+  }
+
+  Future<void> removeSavedFilter(int index) async {
+    final list = savedFilters;
+    if (index < 0 || index >= list.length) return;
+    list.removeAt(index);
+    await _settingsBox.put(
+        'savedFilters', list.map((f) => f.toJson()).toList());
+    notifyListeners();
   }
 }

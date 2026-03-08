@@ -9,6 +9,7 @@ import '../services/storage_service.dart';
 import '../services/download_service.dart';
 import '../services/error_report_utils.dart';
 import '../widgets/video_grid.dart';
+import '../widgets/search_filter_panel.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -22,6 +23,13 @@ class _FeedPageState extends State<FeedPage> {
   bool _showInvalidated = true;
   int _selectedUpMid = 0; // 0 = all
 
+  // Search & filter state
+  bool _showSearch = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchText = '';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +42,7 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     // Safe removal: only remove if widget is still in tree
     try {
       context.read<DownloadService>().removeListener(_onDownloadChanged);
@@ -204,9 +213,31 @@ class _FeedPageState extends State<FeedPage> {
         final upList = upMap.entries.toList();
 
         // Filter by selected UP主
-        final filteredVideos = _selectedUpMid == 0
+        var filteredVideos = _selectedUpMid == 0
             ? allVideos
             : allVideos.where((v) => v.authorMid == _selectedUpMid).toList();
+
+        // Apply search & date filters
+        if (_searchText.isNotEmpty) {
+          final q = _searchText.toLowerCase();
+          filteredVideos = filteredVideos.where((v) {
+            return v.title.toLowerCase().contains(q) ||
+                v.author.toLowerCase().contains(q);
+          }).toList();
+        }
+        if (_dateFrom != null) {
+          filteredVideos = filteredVideos.where((v) {
+            final d = _parsePubDate(v.pubDate);
+            return d != null && !d.isBefore(_dateFrom!);
+          }).toList();
+        }
+        if (_dateTo != null) {
+          final toEnd = DateTime(_dateTo!.year, _dateTo!.month, _dateTo!.day, 23, 59, 59);
+          filteredVideos = filteredVideos.where((v) {
+            final d = _parsePubDate(v.pubDate);
+            return d != null && !d.isAfter(toEnd);
+          }).toList();
+        }
 
         // Sort by publish date descending (newest first)
         filteredVideos.sort((a, b) => _comparePubDate(b.pubDate, a.pubDate));
@@ -238,24 +269,64 @@ class _FeedPageState extends State<FeedPage> {
                   ),
               ],
             ),
-            trailing: Consumer<MonitorService>(
-              builder: (context, monitor, _) {
-                return CupertinoButton(
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoButton(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
-                  onPressed: monitor.isChecking
-                      ? null
-                      : () => monitor.checkForNewVideos(),
-                  child: monitor.isChecking
-                      ? const CupertinoActivityIndicator()
-                      : const Icon(CupertinoIcons.refresh, size: 22),
-                );
-              },
+                  onPressed: () => setState(() => _showSearch = !_showSearch),
+                  child: Icon(
+                    _showSearch ? CupertinoIcons.search_circle_fill : CupertinoIcons.search,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Consumer<MonitorService>(
+                  builder: (context, monitor, _) {
+                    return CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      onPressed: monitor.isChecking
+                          ? null
+                          : () => monitor.checkForNewVideos(),
+                      child: monitor.isChecking
+                          ? const CupertinoActivityIndicator()
+                          : const Icon(CupertinoIcons.refresh, size: 22),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
           child: SafeArea(
             child: Column(
               children: [
+                // Search & filter panel
+                if (_showSearch)
+                  SearchFilterPanel(
+                    searchController: _searchController,
+                    searchText: _searchText,
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                    selectedUpMid: _selectedUpMid,
+                    upList: upList,
+                    storage: storage,
+                    onSearchChanged: (v) => setState(() => _searchText = v),
+                    onSearchCleared: () {
+                      _searchController.clear();
+                      setState(() => _searchText = '');
+                    },
+                    onDateFromChanged: (d) => setState(() => _dateFrom = d),
+                    onDateToChanged: (d) => setState(() => _dateTo = d),
+                    onFilterApplied: (f) => setState(() {
+                      _searchController.text = f.keyword;
+                      _searchText = f.keyword;
+                      _selectedUpMid = f.authorMid;
+                      _dateFrom = f.dateFrom;
+                      _dateTo = f.dateTo;
+                    }),
+                  ),
                 // UP主 filter (scrollable chip bar)
                 if (upList.isNotEmpty)
                   SizedBox(
