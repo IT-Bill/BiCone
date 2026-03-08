@@ -1,5 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+import { readFileSync } from 'node:fs';
+
+const pubspecContent = readFileSync(new URL('../../../pubspec.yaml', import.meta.url), 'utf-8');
+const versionMatch = pubspecContent.match(/^version:\s*([^\s]+)/m);
+const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
 ---
 
 <Layout title="BiCone — Bilibili 防失效追更工具">
@@ -136,8 +142,8 @@ import Layout from '../layouts/Layout.astro';
               <h3 class="text-2xl font-bold text-text-primary tracking-tight">跨平台支持</h3>
               <p class="text-text-secondary mt-2 sm:mt-3 text-base sm:text-lg font-medium">无缝适配 Android 与 Windows，体验一致，随处可用。</p>
               <div class="grow flex items-end justify-between px-2">
-                <svg class="w-16 h-16 text-text-tertiary/40" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.523 15.3414c-.5737 0-1.0414.4651-1.0414 1.0414 0 .5765.4677 1.0414 1.0414 1.0414.5765 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4649-1.0414-1.0414-1.0414zm-11.046 0c-.5765 0-1.0414.4651-1.0414 1.0414 0 .5765.4649 1.0414 1.0414 1.0414.5737 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4677-1.0414-1.0414-1.0414zM17.8098 10.18l1.7226-2.9923c.0965-.1677.0397-.3823-.1282-.4789-.1677-.0965-.3822-.0396-.4789.1282l-1.7452 3.0314c-1.2877-.5879-2.7324-.9155-4.2611-.9155-1.5289 0-2.9736.3276-4.2613.9155l-1.7452-3.0314c-.0966-.1678-.3112-.2247-.4789-.1282-.1678.0966-.2247.3112-.1282.4789l1.7226 2.9923C5.0443 11.5858 3.25 14.0695 3.25 16.9562h17.5c0-2.8868-1.7943-5.3705-4.9402-6.7762z" />
+                <svg class="w-16 h-16 text-text-tertiary/40" viewBox="93.5 36.5 280 280" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M293.91 212.775c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.901-10.926 10.926-10.926 6.026 0 10.927 4.9 10.927 10.926 0 6.025-4.901 10.93-10.927 10.93m-120.774 0c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.9-10.926 10.926-10.926 6.025 0 10.926 4.9 10.926 10.926 0 6.025-4.9 10.93-10.926 10.93m124.693-65.82l21.838-37.822a4.548 4.548 0 00-1.663-6.206 4.549 4.549 0 00-6.206 1.663l-22.111 38.3c-16.91-7.716-35.9-12.015-56.164-12.015-20.264 0-39.254 4.299-56.163 12.015l-22.112-38.3a4.549 4.549 0 00-6.206-1.663 4.545 4.545 0 00-1.663 6.206l21.838 37.822c-37.499 20.395-63.146 58.358-66.898 103.209h262.408c-3.755-44.85-29.402-82.814-66.898-103.21" />
                 </svg>
                 <div class="w-0.5 h-10 bg-black/5 rounded-full"></div>
                 <svg class="w-14 h-14 text-text-tertiary/40" viewBox="0 0 24 24" fill="currentColor">
@@ -239,23 +245,29 @@ import Layout from '../layouts/Layout.astro';
   <section id="download" class="py-24 sm:py-32 bg-[#111111] text-white">
     <div class="max-w-4xl mx-auto px-6">
       <div class="text-center mb-16 reveal-up">
-        <h2 class="text-4xl sm:text-6xl font-bold tracking-tight">现在就启程</h2>
-        <p class="mt-6 text-xl text-white/60 font-medium">免费开源，选择你的专属平台。</p>
+        <h2 class="text-4xl sm:text-6xl font-bold tracking-tight">现在就开始</h2>
+        <p class="mt-6 text-xl text-white/60 font-medium">免费开源，选择你的平台。</p>
+        <div class="mt-6 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-white/80">
+          <span class="text-white/50">最新版本</span>
+          <span id="release-version" data-fallback-version={fallbackVersion} class="text-white">{fallbackVersion}</span>
+          <span class="text-white/30">·</span>
+          <span id="release-date" class="text-white/50"></span>
+        </div>
       </div>
 
       <!-- Source Toggle -->
       <div class="flex justify-center mb-16 reveal-up" style="transition-delay: 100ms;">
         <div class="inline-flex items-center bg-white/10 rounded-full p-1 border border-white/5 backdrop-blur-md" id="source-toggle">
-          <button data-source="github" class="source-btn px-6 py-2.5 rounded-full text-sm font-semibold transition-all bg-white text-black shadow-sm">GitHub</button>
-          <button data-source="gitee" class="source-btn px-6 py-2.5 rounded-full text-sm font-semibold transition-all text-white/60 hover:text-white">Gitee (国内推荐)</button>
+          <button data-source="github" class="source-btn px-6 py-2.5 rounded-full text-sm font-semibold transition-all text-white/60 hover:text-white">GitHub</button>
+          <button data-source="gitee" class="source-btn px-6 py-2.5 rounded-full text-sm font-semibold transition-all bg-white text-black shadow-sm">Gitee (国内推荐)</button>
         </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto reveal-up" style="transition-delay: 200ms;">
         <!-- Android -->
         <div class="flex flex-col items-center gap-6 p-10 rounded-4xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-          <svg class="w-14 h-14 text-[#3DDC84]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.523 15.3414c-.5737 0-1.0414.4651-1.0414 1.0414 0 .5765.4677 1.0414 1.0414 1.0414.5765 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4649-1.0414-1.0414-1.0414zm-11.046 0c-.5765 0-1.0414.4651-1.0414 1.0414 0 .5765.4649 1.0414 1.0414 1.0414.5737 0 1.0414-.4649 1.0414-1.0414 0-.5763-.4677-1.0414-1.0414-1.0414zM17.8098 10.18l1.7226-2.9923c.0965-.1677.0397-.3823-.1282-.4789-.1677-.0965-.3822-.0396-.4789.1282l-1.7452 3.0314c-1.2877-.5879-2.7324-.9155-4.2611-.9155-1.5289 0-2.9736.3276-4.2613.9155l-1.7452-3.0314c-.0966-.1678-.3112-.2247-.4789-.1282-.1678.0966-.2247.3112-.1282.4789l1.7226 2.9923C5.0443 11.5858 3.25 14.0695 3.25 16.9562h17.5c0-2.8868-1.7943-5.3705-4.9402-6.7762z" />
+          <svg class="w-14 h-14 text-[#3DDC84]" viewBox="93.5 36.5 280 280" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M293.91 212.775c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.901-10.926 10.926-10.926 6.026 0 10.927 4.9 10.927 10.926 0 6.025-4.901 10.93-10.927 10.93m-120.774 0c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.9-10.926 10.926-10.926 6.025 0 10.926 4.9 10.926 10.926 0 6.025-4.9 10.93-10.926 10.93m124.693-65.82l21.838-37.822a4.548 4.548 0 00-1.663-6.206 4.549 4.549 0 00-6.206 1.663l-22.111 38.3c-16.91-7.716-35.9-12.015-56.164-12.015-20.264 0-39.254 4.299-56.163 12.015l-22.112-38.3a4.549 4.549 0 00-6.206-1.663 4.545 4.545 0 00-1.663 6.206l21.838 37.822c-37.499 20.395-63.146 58.358-66.898 103.209h262.408c-3.755-44.85-29.402-82.814-66.898-103.21" />
           </svg>
           <div class="text-center">
             <div class="font-bold text-xl text-white">Android</div>
@@ -280,18 +292,18 @@ import Layout from '../layouts/Layout.astro';
             <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
           </svg>
           <div class="text-center">
-            <div class="font-bold text-xl text-white">Windows</div>
+            <div class="font-bold text-xl text-white">Windows x64</div>
           </div>
           <div class="flex flex-col gap-3 w-full mt-2">
             <a data-file="windows-x64-setup.exe"
                class="download-link flex items-center justify-center gap-2 px-5 py-3 bg-white text-black rounded-xl text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
                href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
-              下载（安装版）
+              下载 x64 安装版
             </a>
             <a data-file="windows-x64.zip"
                class="download-link flex items-center justify-center px-4 py-2 bg-transparent text-white/50 hover:text-white rounded-xl text-sm font-medium transition-colors"
                href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
-              便携版
+              x64 便携版
             </a>
           </div>
         </div>
@@ -359,20 +371,44 @@ import Layout from '../layouts/Layout.astro';
     const GITHUB_API = 'https://api.github.com/repos/IT-Bill/BiCone/releases/latest';
 
     interface Asset { name: string; browser_download_url: string; }
-    interface Release { tag_name: string; assets: Asset[]; }
+    interface Release { tag_name: string; published_at: string; assets: Asset[]; }
 
-    let currentSource = 'github';
+    let currentSource = 'gitee';
     let releaseData: Release | null = null;
 
     const toggle = document.getElementById('source-toggle');
     const buttons = toggle?.querySelectorAll<HTMLButtonElement>('.source-btn') ?? [];
     const links = document.querySelectorAll<HTMLAnchorElement>('.download-link');
+    const releaseVersion = document.getElementById('release-version');
+
+    function normalizeVersionLabel(version: string | null | undefined): string {
+      if (!version) {
+        return releaseVersion?.getAttribute('data-fallback-version') ?? '0.0.0';
+      }
+
+      return version.startsWith('v') ? version : `v${version}`;
+    }
+
+    function updateVersion() {
+      if (!releaseVersion) {
+        return;
+      }
+
+      releaseVersion.textContent = normalizeVersionLabel(releaseData?.tag_name);
+
+      const releaseDateEl = document.getElementById('release-date');
+      if (releaseDateEl && releaseData?.published_at) {
+        const date = new Date(releaseData.published_at);
+        releaseDateEl.textContent = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      }
+    }
 
     async function fetchRelease() {
       try {
         const res = await fetch(GITHUB_API);
         if (res.ok) {
           releaseData = await res.json();
+          updateVersion();
           updateLinks();
         }
       } catch {
@@ -427,6 +463,9 @@ import Layout from '../layouts/Layout.astro';
       });
     });
 
+    updateVersion();
+    updateButtons();
+    updateLinks();
     fetchRelease();
   </script>
 
