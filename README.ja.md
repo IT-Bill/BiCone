@@ -5,13 +5,13 @@
 <p align="center">UP 主の全ての更新を見逃さない——「動画は無効です」に永遠にさよなら。</p>
 
 <p align="center">
-  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">ダウンロード</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.en.md">English</a>]
+  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">ダウンロード</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.en.md">English</a>]
 </p>
 
 <p align="center">
   <a href="https://github.com/IT-Bill/BiCone/blob/main/LICENSE"><img src="https://img.shields.io/github/license/IT-Bill/BiCone.svg?style=flat&colorA=080f12&colorB=1fa669&label=%E3%83%A9%E3%82%A4%E3%82%BB%E3%83%B3%E3%82%B9" alt="ライセンス"></a>
   <a href="https://github.com/IT-Bill/BiCone/releases/latest"><img src="https://img.shields.io/github/v/release/IT-Bill/BiCone?style=flat&colorA=080f12&colorB=1fa669&label=%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3" alt="バージョン"></a>
-  <img src="https://img.shields.io/badge/%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0-Android%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="プラットフォーム">
+  <img src="https://img.shields.io/badge/%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0-Android%20%7C%20iOS%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="プラットフォーム">
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-android.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-android.yml?style=flat&colorA=080f12&label=Android" alt="Android CI"></a>
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-windows.yml?style=flat&colorA=080f12&label=Windows" alt="Windows CI"></a>
   <img src="https://img.shields.io/badge/Flutter-%E2%89%A53.41-02569B?style=flat&logo=flutter&colorA=080f12" alt="Flutter">
@@ -22,7 +22,7 @@
 <!-- ![BiCone スクリーンショット](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone は現在 **Android** と **Windows** をサポートしています。iOS 対応は今後のリリースで予定しています。
+> BiCone は **Android**、**iOS**（TestFlight / 自己署名 IPA）、および **Windows** をサポートしています。
 
 > [!WARNING]
 > 本プロジェクトおよびそのコードは、技術研究および学習目的のみを対象としています。本ツール自体は著作権で保護されたコンテンツを提供しません。本ツールの使用において、ユーザーは関連する法令、特に著作権に関する法的規定を遵守する責任を負います。開発者は、本ツールの使用により生じたいかなる著作権紛争または法的責任についても一切の責任を負いません。合法的な範囲内で、適切な権限を得た上でご利用ください。
@@ -34,7 +34,8 @@
 - **高速ダウンロード** — マルチスレッド並列ダウンロード対応、速度は 20MB/s 以上
 - **画質選択** — 360P から 4K まで対応
 - **ダウンロード管理** — ダウンロードの進行状況の確認、一時停止/レジューム対応、キャッシュ済み動画の管理
-- **クロスプラットフォーム** — Android と Windows の両方に対応
+- **更新通知** — 新しい動画が公開されたら即座にプッシュ通知
+- **クロスプラットフォーム** — Android、iOS、Windows の 3 プラットフォームに対応
 
 ## インストール
 
@@ -47,6 +48,11 @@
 
 > [!TIP]
 > 中国のユーザーは [Gitee Releases](https://gitee.com/IT-Bill/BiCone/releases/latest) からより高速にダウンロードできます。
+
+### iOS
+
+- **TestFlight**（推奨）— [TestFlight リンク](https://testflight.apple.com/join/PLACEHOLDER) からパブリックベータに参加
+- **自己署名 IPA** — [Releases](https://github.com/IT-Bill/BiCone/releases/latest) から `unsigned.ipa` をダウンロードし、AltStore、Sideloadly などで署名
 
 ### Windows
 
@@ -100,4 +106,4 @@
 
 ## ライセンス
 
-[MIT License](../LICENSE)
+[MIT License](LICENSE)

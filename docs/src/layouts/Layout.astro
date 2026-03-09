@@ -26,5 +26,11 @@ const { title, description = 'BiCone — Bilibili 专属防失效追更工具。
   </head>
   <body class="bg-white">
     <slot />
+    <script>
+      import { inject } from '@vercel/analytics';
+      import { injectSpeedInsights } from '@vercel/speed-insights';
+      inject();
+      injectSpeedInsights();
+    </script>
   </body>
 </html>

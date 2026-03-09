@@ -5,13 +5,13 @@
 <p align="center">不错过 UP 主的每一次更新，彻底告别"视频已失效"的遗憾。</p>
 
 <p align="center">
-  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">下载安装</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.en.md">English</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.ja.md">日本語</a>]
+  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">下载安装</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.en.md">English</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.ja.md">日本語</a>]
 </p>
 
 <p align="center">
   <a href="https://github.com/IT-Bill/BiCone/blob/main/LICENSE"><img src="https://img.shields.io/github/license/IT-Bill/BiCone.svg?style=flat&colorA=080f12&colorB=1fa669&label=%E5%BC%80%E6%BA%90%E5%8D%8F%E8%AE%AE" alt="开源协议"></a>
   <a href="https://github.com/IT-Bill/BiCone/releases/latest"><img src="https://img.shields.io/github/v/release/IT-Bill/BiCone?style=flat&colorA=080f12&colorB=1fa669&label=%E7%89%88%E6%9C%AC" alt="版本"></a>
-  <img src="https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-Android%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="平台">
+  <img src="https://img.shields.io/badge/%E5%B9%B3%E5%8F%B0-Android%20%7C%20iOS%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="平台">
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-android.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-android.yml?style=flat&colorA=080f12&label=Android" alt="Android CI"></a>
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-windows.yml?style=flat&colorA=080f12&label=Windows" alt="Windows CI"></a>
   <img src="https://img.shields.io/badge/Flutter-%E2%89%A53.41-02569B?style=flat&logo=flutter&colorA=080f12" alt="Flutter">
@@ -22,7 +22,7 @@
 <!-- ![BiCone 截图](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone 目前支持 **Android** 和 **Windows** 平台，iOS 版本将在后续开发。
+> BiCone 支持 **Android**、**iOS**（TestFlight / 自签 IPA）和 **Windows** 平台。
 
 > [!WARNING]
 > 本项目及相关代码仅供技术研究和学习探讨，工具本身不提供任何受版权保护的内容。用户在使用本工具时，需自行确保遵守相关法律法规，特别是与版权相关的法律条款。开发者不对因使用本工具而产生的任何版权纠纷或法律责任承担责任。请用户在使用时谨慎，确保其行为合法合规，并仅在有合法授权的情况下使用相关内容。
@@ -33,9 +33,9 @@
 - **自动缓存** — 检测到新视频后自动下载到本地，无需手动操作
 - **高速下载** — 支持多线程分段并行下载，速度可达 20MB/s 以上
 - **多画质选择** — 支持 360P 至 4K 多种画质
-
 - **下载管理** — 查看下载进度、暂停/继续、断点续传、管理已缓存的视频
-- **跨平台** — Android 和 Windows 双平台支持
+- **更新通知** — 新视频发布时即刻推送系统通知
+- **跨平台** — Android、iOS、Windows 三平台支持
 
 ## 安装
 
@@ -48,6 +48,11 @@
 
 > [!TIP]
 > 国内用户可访问 [Gitee Releases](https://gitee.com/IT-Bill/BiCone/releases/latest) 获得更快的下载速度。
+
+### iOS
+
+- **TestFlight**（推荐）— 已提交 TestFlight 公测，请通过 [TestFlight 链接](https://testflight.apple.com/join/PLACEHOLDER) 加入
+- **自签 IPA** — 从 [Releases](https://github.com/IT-Bill/BiCone/releases/latest) 下载 `unsigned.ipa`，使用 AltStore、Sideloadly 等工具自行签名安装
 
 ### Windows
 

@@ -5,13 +5,13 @@
 <p align="center">Never miss an update from your favorite creators — say goodbye to "video unavailable" forever.</p>
 
 <p align="center">
-  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">Download</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/docs/README.ja.md">日本語</a>]
+  [<a href="https://github.com/IT-Bill/BiCone/releases/latest">Download</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.md">简体中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.zh-TW.md">繁體中文</a>] [<a href="https://github.com/IT-Bill/BiCone/blob/main/README.ja.md">日本語</a>]
 </p>
 
 <p align="center">
   <a href="https://github.com/IT-Bill/BiCone/blob/main/LICENSE"><img src="https://img.shields.io/github/license/IT-Bill/BiCone.svg?style=flat&colorA=080f12&colorB=1fa669" alt="License"></a>
   <a href="https://github.com/IT-Bill/BiCone/releases/latest"><img src="https://img.shields.io/github/v/release/IT-Bill/BiCone?style=flat&colorA=080f12&colorB=1fa669" alt="Release"></a>
-  <img src="https://img.shields.io/badge/platform-Android%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows-blue?style=flat&colorA=080f12&colorB=1fa669" alt="Platform">
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-android.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-android.yml?style=flat&colorA=080f12&label=Android" alt="Android CI"></a>
   <a href="https://github.com/IT-Bill/BiCone/actions/workflows/release-windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/IT-Bill/BiCone/release-windows.yml?style=flat&colorA=080f12&label=Windows" alt="Windows CI"></a>
   <img src="https://img.shields.io/badge/Flutter-%E2%89%A53.41-02569B?style=flat&logo=flutter&colorA=080f12" alt="Flutter">
@@ -22,7 +22,7 @@
 <!-- ![BiCone Screenshot](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone currently supports **Android** and **Windows**. iOS support is planned for a future release.
+> BiCone supports **Android**, **iOS** (TestFlight / self-signed IPA), and **Windows**.
 
 > [!WARNING]
 > This project and its code are intended solely for technical research and learning purposes. The tool itself does not provide any copyrighted content. Users must ensure compliance with applicable laws and regulations when using this tool, particularly those related to copyright. The developer assumes no responsibility for any copyright disputes or legal liabilities arising from the use of this tool. Please use it responsibly, ensure your actions are lawful, and only use related content with proper authorization.
@@ -34,7 +34,8 @@
 - **High-Speed Download** — Multi-threaded parallel download with speeds over 20MB/s
 - **Quality Selection** — Choose from 360P to 4K
 - **Download Manager** — View download progress, pause/resume with resume support, and manage cached videos
-- **Cross-Platform** — Available on both Android and Windows
+- **Push Notifications** — Get notified the moment a new video is published
+- **Cross-Platform** — Available on Android, iOS, and Windows
 
 ## Installation
 
@@ -47,6 +48,11 @@ Download the APK for your device architecture from the [Releases](https://github
 
 > [!TIP]
 > Users in China can visit [Gitee Releases](https://gitee.com/IT-Bill/BiCone/releases/latest) for faster download speeds.
+
+### iOS
+
+- **TestFlight** (recommended) — Join the public beta via [TestFlight link](https://testflight.apple.com/join/PLACEHOLDER)
+- **Self-signed IPA** — Download `unsigned.ipa` from [Releases](https://github.com/IT-Bill/BiCone/releases/latest) and sign with AltStore, Sideloadly, etc.
 
 ### Windows
 
@@ -100,4 +106,4 @@ In the "Settings" tab you can adjust:
 
 ## License
 
-[MIT License](../LICENSE)
+[MIT License](LICENSE)
