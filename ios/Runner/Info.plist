@@ -70,5 +70,7 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>BiCone 需要访问你的照片，用于保存视频封面或缓存内容。</string>
 </dict>
 </plist>
