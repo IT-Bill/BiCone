@@ -44,7 +44,7 @@ workflows:
         script: |
           VERSION=$(echo "$CM_TAG" | sed 's/^v//')
           IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
-          cp "$IPA_PATH" "build/ios/ipa/BiCone-${VERSION}.ipa"
+          mv "$IPA_PATH" "build/ios/ipa/BiCone-${VERSION}.ipa"
 
     artifacts:
       - build/ios/ipa/*.ipa
