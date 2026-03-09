@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Bilibili 视频自动监控下载',
+                      'Bilibili 视频自动缓存',
                       style: TextStyle(
                         fontSize: 16,
                         letterSpacing: 0.5,
