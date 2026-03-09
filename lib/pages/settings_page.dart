@@ -208,7 +208,14 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                     CupertinoListTile(
-                      leading: const Icon(CupertinoIcons.paw),
+                        leading: ClipOval(
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       title: const Text('BiCone'),
                       additionalInfo: FutureBuilder<PackageInfo>(
                         future: PackageInfo.fromPlatform(),

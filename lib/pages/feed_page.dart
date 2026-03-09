@@ -203,8 +203,14 @@ class _FeedPageState extends State<FeedPage> {
               .toList();
         }
 
-        // Build unique UP主 list
+        // Build unique UP主 list from subscriptions (show all, even without videos)
         final upMap = <int, String>{};
+        for (final s in storage.subscriptions) {
+          if (!s.paused) {
+            upMap[s.mid] = s.name;
+          }
+        }
+        // Also include UPs from videos that may not be in subscriptions anymore
         for (final v in storage.videos) {
           if (v.authorMid != 0 && !upMap.containsKey(v.authorMid)) {
             upMap[v.authorMid] = v.author;
@@ -367,11 +373,37 @@ class _FeedPageState extends State<FeedPage> {
                   ),
                 // Video grid
                 Expanded(
-                  child: VideoGrid(
-                    videos: filteredVideos,
-                    showDeleted: _showDeleted,
-                    onBeforeDownload: _ensureDownloadPath,
-                  ),
+                  child: _selectedUpMid != 0 && filteredVideos.isEmpty && _searchText.isEmpty && _dateFrom == null && _dateTo == null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(CupertinoIcons.play_rectangle,
+                                  size: 64, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+                              const SizedBox(height: 16),
+                              Text(
+                                '暂未获取到视频',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '未发布视频或近期图文动态较多',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : VideoGrid(
+                          videos: filteredVideos,
+                          showDeleted: _showDeleted,
+                          onBeforeDownload: _ensureDownloadPath,
+                        ),
                 ),
               ],
             ),

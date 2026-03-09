@@ -26,141 +26,148 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFCE4EC), // light pink
-              CupertinoColors.systemGroupedBackground,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(32),
-              child: Consumer<AuthService>(
-                builder: (context, auth, _) {
-                  // Auto-navigate on login
-                  if (auth.state == AuthState.loggedIn) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Navigator.of(context).pushReplacement(
-                        CupertinoPageRoute(
-                            builder: (_) => const HomePage()),
-                      );
-                    });
-                  }
+      backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(context),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: Consumer<AuthService>(
+              builder: (context, auth, _) {
+                // Auto-navigate on login
+                if (auth.state == AuthState.loggedIn) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacement(
+                      CupertinoPageRoute(builder: (_) => const HomePage()),
+                    );
+                  });
+                }
 
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // ── Logo ──
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.biliPink,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(CupertinoIcons.paw,
-                            size: 48, color: CupertinoColors.white),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'BiCone',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.biliPink,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Bilibili 视频自动监控下载',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: CupertinoColors.secondaryLabel
-                              .resolveFrom(context),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-
-                      // ── QR Card ──
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(32),
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // ── Logo ──
+                    Hero(
+                      tag: 'app_logo',
+                      child: Container(
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemBackground
-                              .resolveFrom(context),
-                          borderRadius: BorderRadius.circular(16),
+                          shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: CupertinoColors.systemGrey
-                                  .withValues(alpha: 0.15),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                              color: AppTheme.biliPink.withValues(alpha: 0.2),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              '扫码登录',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '请使用 Bilibili 手机客户端扫描二维码',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: CupertinoColors.secondaryLabel
-                                    .resolveFrom(context),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            _buildQRContent(auth),
-                            const SizedBox(height: 16),
-                            _buildStatusText(auth),
-                            if (kIsWeb) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF3CD),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      CupertinoIcons
-                                          .exclamationmark_triangle,
-                                      color: Color(0xFF856404),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '当前运行在 Web 平台，Bilibili API 不支持浏览器跨域请求。\n请使用 Windows 或 Android 运行此应用。',
-                                        style: TextStyle(
-                                          color: Color(0xFF856404),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                    const SizedBox(height: 32),
+                    const Text(
+                      'BiCone',
+                      style: TextStyle(
+                        fontSize: 36,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.biliPink,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Bilibili 视频自动监控下载',
+                      style: TextStyle(
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      ),
+                    ),
+                    const SizedBox(height: 56),
+
+                    // ── QR Card ──
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBackground.resolveFrom(context),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: CupertinoColors.systemGrey5.resolveFrom(context),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CupertinoColors.systemGrey.withValues(alpha: 0.08),
+                            blurRadius: 32,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            '扫码登录',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '请使用 Bilibili 手机客户端扫描二维码',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          _buildQRContent(auth),
+                          const SizedBox(height: 24),
+                          _buildStatusText(auth),
+                          if (kIsWeb) ...[
+                            const SizedBox(height: 24),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3CD),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    CupertinoIcons.exclamationmark_triangle,
+                                    color: Color(0xFF856404),
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '当前运行在 Web 平台，Bilibili API 不支持浏览器跨域请求。\n请使用 Windows 或 Android 运行此应用。',
+                                      style: TextStyle(
+                                        color: Color(0xFF856404),
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
