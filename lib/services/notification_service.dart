@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Manages local push notifications for new-video alerts and download progress.
@@ -15,6 +16,9 @@ class NotificationService {
 
   /// Stable notification ID for the download progress notification.
   static const int _downloadProgressId = 9999;
+
+  /// Fires when the user taps a notification. The value is the payload string.
+  final ValueNotifier<String?> onNotificationTapped = ValueNotifier(null);
 
   Future<void> init() async {
     if (_initialized) return;
@@ -40,16 +44,32 @@ class NotificationService {
       windows: windowsSettings,
     );
 
-    await _plugin.initialize(settings: initSettings);
+    await _plugin.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
     _initialized = true;
 
     // Request notification permission on Android 13+
     if (!kIsWeb && Platform.isAndroid) {
-      await _plugin
+      final android = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+              AndroidFlutterLocalNotificationsPlugin>();
+      await android?.requestNotificationsPermission();
+
+      // Pre-create the new-video channel so it exists in system settings
+      const channel = AndroidNotificationChannel(
+        'new_video_channel',
+        '新视频提醒',
+        description: '当订阅的UP主发布新视频时通知',
+        importance: Importance.high,
+      );
+      await android?.createNotificationChannel(channel);
     }
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    onNotificationTapped.value = response.payload;
   }
 
   /// Show a notification about a newly discovered video.
@@ -88,6 +108,7 @@ class NotificationService {
       title: '$upName 发布了新视频',
       body: body,
       notificationDetails: details,
+      payload: 'downloads',
     );
   }
 
@@ -177,5 +198,19 @@ class NotificationService {
   Future<void> cancelDownloadNotification() async {
     if (!_initialized) return;
     await _plugin.cancel(id: _downloadProgressId);
+  }
+
+  /// Open the system notification channel settings for the new-video channel.
+  /// This allows users (especially on Xiaomi/HyperOS) to enable floating notifications.
+  Future<void> openNewVideoChannelSettings() async {
+    if (!Platform.isAndroid) return;
+    try {
+      const channel = MethodChannel('bicone/notification_settings');
+      await channel.invokeMethod('openChannelSettings', {
+        'channelId': 'new_video_channel',
+      });
+    } catch (_) {
+      // Fallback: ignored if platform channel is not available
+    }
   }
 }
