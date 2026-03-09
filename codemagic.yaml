@@ -1,6 +1,78 @@
 workflows:
-  ios-build:
-    name: iOS Build (no codesign)
+  # ── 签名构建：发布到 TestFlight ──
+  ios-testflight:
+    name: iOS Build (TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    triggering:
+      events:
+        - tag
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+      tag_patterns:
+        - pattern: '*'
+          include: true
+
+    integrations:
+      app_store_connect: BiCone
+
+    environment:
+      flutter: stable
+      groups:
+        - github_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: cn.itbill.bicone
+
+    scripts:
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles --project ios/Runner.xcodeproj
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install
+      - name: Build signed IPA
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+      - name: Rename IPA
+        script: |
+          VERSION=$(echo "$CM_TAG" | sed 's/^v//')
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+          cp "$IPA_PATH" "build/ios/ipa/BiCone-${VERSION}.ipa"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
+        beta_groups:
+          - BiCone Testers
+      scripts:
+        - name: Upload signed IPA to GitHub Release
+          script: |
+            TAG="$CM_TAG"
+            VERSION=$(echo "$TAG" | sed 's/^v//')
+            IPA="build/ios/ipa/BiCone-${VERSION}.ipa"
+            gh release upload "$TAG" "$IPA" --repo IT-Bill/BiCone --clobber
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+  # ── 未签名构建：放 GitHub Release 供用户自签 ──
+  ios-unsigned:
+    name: iOS Build (unsigned)
     max_build_duration: 60
     instance_type: mac_mini_m2
 
@@ -18,6 +90,7 @@ workflows:
       flutter: stable
       groups:
         - github_credentials
+
     scripts:
       - name: Get Flutter packages
         script: |
@@ -35,17 +108,20 @@ workflows:
           mv Runner.app Payload/
           VERSION=$(echo "$CM_TAG" | sed 's/^v//')
           zip -r "BiCone-${VERSION}-unsigned.ipa" Payload
+
     artifacts:
       - build/ios/iphoneos/BiCone-*-unsigned.ipa
       - /tmp/xcodebuild_logs/*.log
+
     publishing:
       scripts:
-        - name: Upload IPA to GitHub Release
+        - name: Upload unsigned IPA to GitHub Release
           script: |
             TAG="$CM_TAG"
             VERSION=$(echo "$TAG" | sed 's/^v//')
             IPA="build/ios/iphoneos/BiCone-${VERSION}-unsigned.ipa"
             gh release upload "$TAG" "$IPA" --repo IT-Bill/BiCone --clobber
+
     cache:
       cache_paths:
         - $HOME/.pub-cache
