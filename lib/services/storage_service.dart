@@ -343,13 +343,6 @@ class StorageService extends ChangeNotifier {
     await _settingsBox.put('skippedVersion', version);
   }
 
-  /// Whether the notification floating-notification guide has been shown.
-  bool get notificationGuideShown =>
-      _settingsBox.get('notificationGuideShown', defaultValue: false);
-  Future<void> setNotificationGuideShown(bool shown) async {
-    await _settingsBox.put('notificationGuideShown', shown);
-  }
-
   // ─── Saved Video Filters ──────────────────────────────
 
   List<VideoFilter> get savedFilters {

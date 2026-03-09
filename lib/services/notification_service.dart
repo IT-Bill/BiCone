@@ -1,6 +1,5 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Manages local push notifications for new-video alerts and download progress.
@@ -198,19 +197,5 @@ class NotificationService {
   Future<void> cancelDownloadNotification() async {
     if (!_initialized) return;
     await _plugin.cancel(id: _downloadProgressId);
-  }
-
-  /// Open the system notification channel settings for the new-video channel.
-  /// This allows users (especially on Xiaomi/HyperOS) to enable floating notifications.
-  Future<void> openNewVideoChannelSettings() async {
-    if (!Platform.isAndroid) return;
-    try {
-      const channel = MethodChannel('bicone/notification_settings');
-      await channel.invokeMethod('openChannelSettings', {
-        'channelId': 'new_video_channel',
-      });
-    } catch (_) {
-      // Fallback: ignored if platform channel is not available
-    }
   }
 }

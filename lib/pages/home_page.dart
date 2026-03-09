@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -38,7 +37,6 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MonitorService>().startMonitoring();
       _checkUpdateOnFirstLaunchOfDay();
-      _checkNotificationGuide();
       _listenNotificationTaps();
     });
   }
@@ -53,45 +51,6 @@ class _HomePageState extends State<HomePage> {
         notifier.value = null;
       }
     });
-  }
-
-  /// On Android, prompt the user once to enable floating notifications
-  /// for the new-video channel (needed on Xiaomi / HyperOS etc.).
-  Future<void> _checkNotificationGuide() async {
-    if (!Platform.isAndroid) return;
-    final storage = context.read<StorageService>();
-    if (storage.notificationGuideShown) return;
-
-    await storage.setNotificationGuideShown(true);
-    if (!mounted) return;
-
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('开启悬浮通知'),
-        content: const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: Text(
-            '为了在检测到新视频时弹出通知提醒，'
-            '请在接下来的系统设置页中确认「悬浮通知」（或「横幅通知」）已开启。',
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('跳过'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () {
-              Navigator.pop(ctx);
-              NotificationService().openNewVideoChannelSettings();
-            },
-            child: const Text('前往设置'),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Check for updates once per day on first app launch.
