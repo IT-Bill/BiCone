@@ -1,7 +1,6 @@
 import 'dart:ui';
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show LinearProgressIndicator, Material, NavigationRail, NavigationRailDestination, NavigationRailLabelType;
+import 'package:flutter/material.dart' show Material, NavigationRail, NavigationRailDestination, NavigationRailLabelType;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/monitor_service.dart';
@@ -9,6 +8,7 @@ import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../services/update_service.dart';
 import '../theme.dart';
+import '../widgets/update_dialog.dart';
 import 'feed_page.dart';
 import 'subscriptions_page.dart';
 import 'downloads_page.dart';
@@ -142,78 +142,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _downloadAndInstall(ReleaseInfo release) async {
-    final cancelToken = CancelToken();
-    final progressNotifier = ValueNotifier<String>('准备下载...');
-    final valueNotifier = ValueNotifier<double?>(null);
-
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('正在下载更新'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Column(
-            children: [
-              ValueListenableBuilder<double?>(
-                valueListenable: valueNotifier,
-                builder: (_, value, _) =>
-                    LinearProgressIndicator(value: value),
-              ),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<String>(
-                valueListenable: progressNotifier,
-                builder: (_, text, _) =>
-                    Text(text, style: const TextStyle(fontSize: 13)),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              cancelToken.cancel();
-              Navigator.pop(ctx);
-            },
-            child: const Text('取消'),
-          ),
-        ],
-      ),
-    );
-
-    try {
-      final filePath = await UpdateService.downloadUpdate(
-        release.downloadUrl,
-        onProgress: (received, total) {
-          if (total > 0) {
-            valueNotifier.value = received / total;
-            progressNotifier.value =
-                '${(received / 1024 / 1024).toStringAsFixed(1)} / '
-                '${(total / 1024 / 1024).toStringAsFixed(1)} MB';
-          }
-        },
-        cancelToken: cancelToken,
-      );
-
-      if (!mounted) return;
-      Navigator.pop(context); // dismiss download dialog
-
-      await UpdateService.installUpdate(filePath);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) return;
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    } catch (_) {
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    } finally {
-      progressNotifier.dispose();
-      valueNotifier.dispose();
-    }
+  void _downloadAndInstall(ReleaseInfo release) {
+    showDownloadAndInstallDialog(context, release);
   }
 
   @override

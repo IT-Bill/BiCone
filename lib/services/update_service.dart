@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,6 +22,9 @@ class ReleaseInfo {
 
 class UpdateService {
   static const _githubRepo = 'IT-Bill/BiCone';
+
+  static const _installChannel =
+      MethodChannel('cn.itbill.bicone/install_permission');
 
   static final _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 15),
@@ -99,8 +103,34 @@ class UpdateService {
     return savePath;
   }
 
+  /// Check if the app has permission to install packages (Android 8+).
+  static Future<bool> canInstallPackages() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _installChannel.invokeMethod<bool>('canRequestPackageInstalls') ?? false;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Request install permission. Returns true if granted after user action.
+  static Future<bool> requestInstallPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _installChannel.invokeMethod<bool>('requestInstallPermission') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Install the downloaded APK (Android) or open the installer (Windows).
   static Future<void> installUpdate(String filePath) async {
+    if (Platform.isAndroid) {
+      final canInstall = await canInstallPackages();
+      if (!canInstall) {
+        throw Exception('安装权限未授予，请在设置中允许安装未知应用');
+      }
+    }
     await OpenFilex.open(filePath);
   }
 
