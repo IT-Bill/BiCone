@@ -545,6 +545,57 @@ const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
     updateButtons();
     updateLinks();
     fetchRelease();
+
+    // Download stats — accessible via console: window.bicone_download_stats
+    (async () => {
+      try {
+        const res = await fetch('https://api.github.com/repos/IT-Bill/BiCone/releases', {
+          headers: { Accept: 'application/vnd.github+json' },
+        });
+        if (!res.ok) return;
+        const releases: any[] = await res.json();
+
+        const allAssets = releases.flatMap((r) =>
+          r.assets.map((a: any) => ({
+            version: r.tag_name,
+            name: a.name,
+            count: a.download_count,
+          }))
+        );
+
+        const total = allAssets.reduce((s, a) => s + a.count, 0);
+
+        const latestRelease = releases[0];
+        const latestTotal = latestRelease
+          ? latestRelease.assets.reduce((s: number, a: any) => s + a.download_count, 0)
+          : 0;
+
+        const byPlatform: Record<string, number> = {};
+        for (const a of allAssets) {
+          let platform = 'other';
+          if (a.name.includes('.apk')) platform = 'android';
+          else if (a.name.includes('.ipa')) platform = 'ios';
+          else if (a.name.includes('windows')) platform = 'windows';
+          byPlatform[platform] = (byPlatform[platform] || 0) + a.count;
+        }
+
+        const byVersion = releases.map((r) => ({
+          version: r.tag_name,
+          total: r.assets.reduce((s: number, a: any) => s + a.download_count, 0),
+          assets: r.assets.map((a: any) => ({ name: a.name, count: a.download_count })),
+        }));
+
+        (window as any).bicone_download_stats = {
+          total,
+          latestVersion: latestRelease?.tag_name,
+          latestTotal,
+          byPlatform,
+          byVersion,
+        };
+      } catch {
+        // Silently fail
+      }
+    })();
   </script>
 
   <!-- Footer -->
