@@ -165,6 +165,37 @@ class VideoGrid extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, VideoItem video) async {
+    final storage = context.read<StorageService>();
+
+    if (storage.isAppReviewMode) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: const Text('删除视频'),
+          content: Text('确定要删除「${video.title}」吗？演示模式下将仅更新本地样例数据。'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(ctx);
+                if (context.mounted) {
+                  final dl = context.read<DownloadService>();
+                  await dl.deleteVideoFiles(video);
+                  storage.deleteVideo(video.bvid);
+                }
+              },
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     // Show a loading indicator while checking validity
     showCupertinoDialog(
       context: context,
@@ -185,7 +216,6 @@ class VideoGrid extends StatelessWidget {
     );
 
     // Check video validity via RSSHub
-    final storage = context.read<StorageService>();
     final rssService = RssService(rssHubUrl: storage.rssHubUrl, rssMode: storage.rssMode);
     final exists = await rssService.checkVideoExists(video.authorMid, video.bvid);
 

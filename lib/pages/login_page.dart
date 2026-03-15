@@ -1,9 +1,13 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/demo_service.dart';
+import '../services/download_service.dart';
 import '../services/error_report_utils.dart';
+import '../services/storage_service.dart';
 import '../theme.dart';
 import 'home_page.dart';
 
@@ -21,6 +25,28 @@ class _LoginPageState extends State<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthService>().generateQRCode();
     });
+  }
+
+  Future<void> _enterAppReviewDemo() async {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CupertinoActivityIndicator(radius: 16),
+      ),
+    );
+
+    try {
+      await DemoService.seedAppReviewDemo(
+        storage: context.read<StorageService>(),
+        auth: context.read<AuthService>(),
+      );
+      await context.read<DownloadService>().hydrateAppReviewDemoTasks();
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
   }
 
   @override
@@ -165,6 +191,29 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                     ),
+                    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          onPressed: _enterAppReviewDemo,
+                          child: const Column(
+                            children: [
+                              Text(
+                                'App Review Demo',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '供 TestFlight / App Review 使用，自动载入演示账号与样例数据',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 );
               },

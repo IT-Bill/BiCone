@@ -27,6 +27,13 @@ class MonitorService extends ChangeNotifier {
   MonitorService(this._storage, this._downloadService, this._notificationService);
 
   void startMonitoring() {
+    if (_storage.isAppReviewMode) {
+      _timer?.cancel();
+      _isMonitoring = false;
+      notifyListeners();
+      return;
+    }
+
     if (_isMonitoring) return;
     _isMonitoring = true;
 
@@ -48,6 +55,8 @@ class MonitorService extends ChangeNotifier {
   }
 
   void updateInterval() {
+    if (_storage.isAppReviewMode) return;
+
     if (_isMonitoring) {
       _timer?.cancel();
       _timer = Timer.periodic(
@@ -58,6 +67,14 @@ class MonitorService extends ChangeNotifier {
   }
 
   Future<void> checkForNewVideos() async {
+    if (_storage.isAppReviewMode) {
+      _lastCheck = DateTime.now();
+      _isChecking = false;
+      _newVideoCount = 0;
+      notifyListeners();
+      return;
+    }
+
     if (_isChecking) return;
     _isChecking = true;
     _newVideoCount = 0;
