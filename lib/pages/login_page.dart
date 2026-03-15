@@ -3,11 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/auth_service.dart';
-import '../services/demo_service.dart';
-import '../services/download_service.dart';
 import '../services/error_report_utils.dart';
-import '../services/storage_service.dart';
 import '../theme.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,52 +15,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _isEnteringAppReviewDemo = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthService>().generateQRCode();
     });
-  }
-
-  Future<void> _enterAppReviewDemo() async {
-    if (_isEnteringAppReviewDemo) return;
-
-    setState(() {
-      _isEnteringAppReviewDemo = true;
-    });
-
-    final storage = context.read<StorageService>();
-    final auth = context.read<AuthService>();
-    final downloadService = context.read<DownloadService>();
-    final navigator = Navigator.of(context, rootNavigator: true);
-
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CupertinoActivityIndicator(radius: 16),
-      ),
-    );
-
-    try {
-      await DemoService.seedAppReviewDemo(
-        storage: storage,
-        auth: auth,
-      );
-      await downloadService.hydrateAppReviewDemoTasks();
-    } finally {
-      if (navigator.mounted && navigator.canPop()) {
-        navigator.pop();
-      }
-      if (mounted) {
-        setState(() {
-          _isEnteringAppReviewDemo = false;
-        });
-      }
-    }
   }
 
   @override
@@ -75,6 +33,15 @@ class _LoginPageState extends State<LoginPage> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
             child: Consumer<AuthService>(
               builder: (context, auth, _) {
+                // Auto-navigate on login
+                if (auth.state == AuthState.loggedIn) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacement(
+                      CupertinoPageRoute(builder: (_) => const HomePage()),
+                    );
+                  });
+                }
+
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -198,30 +165,6 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                     ),
-                    if (!kIsWeb) ...[
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: CupertinoButton(
-                          onPressed:
-                              _isEnteringAppReviewDemo ? null : _enterAppReviewDemo,
-                          child: const Column(
-                            children: [
-                              Text(
-                                'App Review Demo',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                '供 TestFlight / App Review 使用，自动载入演示账号与样例数据',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 );
               },

@@ -8,7 +8,6 @@ import '../services/monitor_service.dart';
 import '../services/storage_service.dart';
 import '../services/download_service.dart';
 import '../services/error_report_utils.dart';
-import '../widgets/app_review_banner.dart';
 import '../widgets/video_grid.dart';
 import '../widgets/search_filter_panel.dart';
 
@@ -131,7 +130,6 @@ class _FeedPageState extends State<FeedPage> {
 
   Future<bool> _ensureDownloadPath() async {
     final storage = context.read<StorageService>();
-    if (storage.isAppReviewMode) return true;
     if (storage.downloadPath.isNotEmpty) return true;
 
     // iOS: auto-set to app's Documents directory
@@ -295,17 +293,12 @@ class _FeedPageState extends State<FeedPage> {
                     return CupertinoButton(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
-                      onPressed: storage.isAppReviewMode || monitor.isChecking
+                      onPressed: monitor.isChecking
                           ? null
                           : () => monitor.checkForNewVideos(),
                       child: monitor.isChecking
                           ? const CupertinoActivityIndicator()
-                          : Icon(
-                              storage.isAppReviewMode
-                                  ? CupertinoIcons.lock_circle
-                                  : CupertinoIcons.refresh,
-                              size: 22,
-                            ),
+                          : const Icon(CupertinoIcons.refresh, size: 22),
                     );
                   },
                 ),
@@ -315,10 +308,6 @@ class _FeedPageState extends State<FeedPage> {
           child: SafeArea(
             child: Column(
               children: [
-                if (storage.isAppReviewMode)
-                  const AppReviewBanner(
-                    message: '当前为 App Review Demo。视频、下载状态和账号数据均为本地预置样例；实时刷新与源站监控已关闭。',
-                  ),
                 // Search & filter panel
                 if (_showSearch)
                   SearchFilterPanel(

@@ -8,7 +8,6 @@ import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../services/monitor_service.dart';
 import '../services/download_service.dart';
-import '../widgets/app_review_banner.dart';
 import '../widgets/subscription_card.dart';
 
 class SubscriptionsPage extends StatelessWidget {
@@ -37,13 +36,7 @@ class SubscriptionsPage extends StatelessWidget {
             ),
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
-              onPressed: () {
-                if (storage.isAppReviewMode) {
-                  _showAppReviewNotice(context);
-                  return;
-                }
-                _showAddDialog(context);
-              },
+              onPressed: () => _showAddDialog(context),
               child: const Icon(CupertinoIcons.add, size: 22),
             ),
           ),
@@ -53,66 +46,47 @@ class SubscriptionsPage extends StatelessWidget {
                 final subs = storage.subscriptions;
 
                 if (subs.isEmpty) {
-                  return Column(
-                    children: [
-                      if (storage.isAppReviewMode)
-                        const AppReviewBanner(
-                          message: '当前为 App Review Demo。订阅数据为预置样例，新增真实 UP 主已禁用。',
-                        ),
-                      Expanded(
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                CupertinoIcons.person_2,
-                                size: 64,
-                                color: CupertinoColors.tertiaryLabel.resolveFrom(
-                                  context,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                '暂无订阅',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  color: CupertinoColors.secondaryLabel.resolveFrom(
-                                    context,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                storage.isAppReviewMode ? '演示模式下不支持添加真实账号' : '点击右上角 + 添加UP主',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: CupertinoColors.tertiaryLabel.resolveFrom(
-                                    context,
-                                  ),
-                                ),
-                              ),
-                            ],
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.person_2,
+                          size: 64,
+                          color: CupertinoColors.tertiaryLabel.resolveFrom(
+                            context,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          '暂无订阅',
+                          style: TextStyle(
+                            fontSize: 17,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '点击右上角 + 添加UP主',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: CupertinoColors.tertiaryLabel.resolveFrom(
+                              context,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                  itemCount: subs.length + (storage.isAppReviewMode ? 1 : 0),
+                  itemCount: subs.length,
                   itemBuilder: (context, index) {
-                    if (storage.isAppReviewMode && index == 0) {
-                      return const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: AppReviewBanner(
-                          message: '当前为 App Review Demo。订阅、视频和下载状态均为本地样例，便于审核直接体验界面与交互。',
-                        ),
-                      );
-                    }
-
-                    final sub = subs[storage.isAppReviewMode ? index - 1 : index];
+                    final sub = subs[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: SubscriptionCard(
@@ -128,25 +102,6 @@ class SubscriptionsPage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  void _showAppReviewNotice(BuildContext context) {
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('App Review Demo'),
-        content: const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: Text('当前演示模式已预置订阅和视频样例，新增真实 Bilibili 账号在审核模式下已禁用。'),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
     );
   }
 

@@ -25,42 +25,6 @@ class FullVideoCard extends StatelessWidget {
     this.downloadTask,
   });
 
-  bool get _hasAssetThumbnail => video.thumbnail.startsWith('assets/');
-
-  Widget _buildThumbnail(BuildContext context) {
-    if (_hasAssetThumbnail) {
-      return Image.asset(
-        video.thumbnail,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: CupertinoColors.systemGrey5.resolveFrom(context),
-          child: const Icon(
-            CupertinoIcons.photo,
-            size: 48,
-            color: CupertinoColors.systemGrey,
-          ),
-        ),
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: video.thumbnail,
-      fit: BoxFit.cover,
-      placeholder: (context, url) => Container(
-        color: CupertinoColors.systemGrey5.resolveFrom(context),
-        child: const Center(child: CupertinoActivityIndicator()),
-      ),
-      errorWidget: (context, url, error) => Container(
-        color: CupertinoColors.systemGrey5.resolveFrom(context),
-        child: const Icon(
-          CupertinoIcons.photo,
-          size: 48,
-          color: CupertinoColors.systemGrey,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -87,7 +51,20 @@ class FullVideoCard extends StatelessWidget {
                 tag: 'cover_${video.bvid}',
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: _buildThumbnail(context),
+                  child: CachedNetworkImage(
+                    imageUrl: video.thumbnail,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Center(
+                          child: CupertinoActivityIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      child: const Icon(CupertinoIcons.photo,
+                          size: 48, color: CupertinoColors.systemGrey),
+                    ),
+                  ),
                 ),
               ),
             ),
