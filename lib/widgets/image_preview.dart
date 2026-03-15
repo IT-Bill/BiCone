@@ -13,6 +13,35 @@ class ImagePreviewPage extends StatefulWidget {
 class _ImagePreviewPageState extends State<ImagePreviewPage> {
   final TransformationController _transformController = TransformationController();
 
+  bool get _hasAssetImage => widget.imageUrl.startsWith('assets/');
+
+  Widget _buildImage() {
+    if (_hasAssetImage) {
+      return Image.asset(
+        widget.imageUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => const Icon(
+          CupertinoIcons.photo,
+          size: 64,
+          color: CupertinoColors.systemGrey,
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: widget.imageUrl,
+      fit: BoxFit.contain,
+      placeholder: (context, url) => const CupertinoActivityIndicator(
+        color: CupertinoColors.white,
+      ),
+      errorWidget: (context, url, error) => const Icon(
+        CupertinoIcons.photo,
+        size: 64,
+        color: CupertinoColors.systemGrey,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _transformController.dispose();
@@ -40,18 +69,7 @@ class _ImagePreviewPageState extends State<ImagePreviewPage> {
           child: Center(
             child: Hero(
               tag: widget.heroTag,
-              child: CachedNetworkImage(
-                imageUrl: widget.imageUrl,
-                fit: BoxFit.contain,
-                placeholder: (context, url) => const CupertinoActivityIndicator(
-                  color: CupertinoColors.white,
-                ),
-                errorWidget: (context, url, error) => const Icon(
-                  CupertinoIcons.photo,
-                  size: 64,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
+              child: _buildImage(),
             ),
           ),
         ),

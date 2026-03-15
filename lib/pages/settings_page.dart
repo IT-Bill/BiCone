@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/monitor_service.dart';
 import '../services/update_service.dart';
+import '../widgets/app_review_banner.dart';
 import 'login_page.dart';
 import 'feedback_page.dart';
 
@@ -27,6 +28,10 @@ class SettingsPage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(bottom: 100),
               children: [
+                if (storage.isAppReviewMode)
+                  const AppReviewBanner(
+                    message: '当前为 App Review Demo。真实 Bilibili 登录改为审核专用演示入口；退出登录后将返回二维码登录页。',
+                  ),
                 // ── Account ──
                 CupertinoListSection.insetGrouped(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -62,15 +67,20 @@ class SettingsPage extends StatelessWidget {
                   children: [
                     CupertinoListTile(
                       title: const Text('自动监控'),
-                      subtitle:
-                          Text(monitor.isMonitoring ? '运行中' : '已停止'),
+                      subtitle: Text(
+                        storage.isAppReviewMode
+                            ? 'App Review Demo 中已禁用'
+                            : (monitor.isMonitoring ? '运行中' : '已停止'),
+                      ),
                       trailing: CupertinoSwitch(
-                        value: monitor.isMonitoring,
-                        onChanged: (v) {
-                          v
-                              ? monitor.startMonitoring()
-                              : monitor.stopMonitoring();
-                        },
+                        value: storage.isAppReviewMode ? false : monitor.isMonitoring,
+                        onChanged: storage.isAppReviewMode
+                            ? null
+                            : (v) {
+                                v
+                                    ? monitor.startMonitoring()
+                                    : monitor.stopMonitoring();
+                              },
                       ),
                     ),
                     CupertinoListTile(

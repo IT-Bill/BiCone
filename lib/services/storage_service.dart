@@ -23,6 +23,9 @@ class StorageService extends ChangeNotifier {
   List<Subscription> get subscriptions => _subscriptions;
   List<VideoItem> get videos => _videos;
 
+  bool get isAppReviewMode =>
+      _settingsBox.get('isAppReviewMode', defaultValue: false);
+
   Future<void> init() async {
     await Hive.initFlutter();
     _authBox = await Hive.openBox(_authBoxName);
@@ -109,6 +112,12 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearSubscriptions() async {
+    await _subsBox.clear();
+    _loadSubscriptions();
+    notifyListeners();
+  }
+
   Future<bool> toggleSubscriptionPause(int mid) async {
     final data = _subsBox.get(mid.toString());
     if (data != null) {
@@ -181,6 +190,12 @@ class StorageService extends ChangeNotifier {
 
   Future<void> saveVideo(VideoItem video) async {
     await _videosBox.put(video.bvid, video.toJson());
+    _loadVideos();
+    notifyListeners();
+  }
+
+  Future<void> clearVideos() async {
+    await _videosBox.clear();
     _loadVideos();
     notifyListeners();
   }
@@ -333,6 +348,11 @@ class StorageService extends ChangeNotifier {
       _settingsBox.get('lastUpdateCheck', defaultValue: '');
   Future<void> setLastUpdateCheck(DateTime time) async {
     await _settingsBox.put('lastUpdateCheck', time.toIso8601String());
+    notifyListeners();
+  }
+
+  Future<void> setAppReviewMode(bool enabled) async {
+    await _settingsBox.put('isAppReviewMode', enabled);
     notifyListeners();
   }
 

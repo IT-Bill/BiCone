@@ -34,9 +34,14 @@ class DownloadService extends ChangeNotifier {
   final Dio _dio = Dio();
 
   final List<DownloadTask> _tasks = [];
+  final Set<String> _demoRunningBvids = <String>{};
   bool _isProcessing = false;
   String? _lastError;
   String? _lastErrorBvid; // BV号 of the video that caused the last error
+
+  static const int _demoVideoTotal = 120 * 1024 * 1024;
+  static const int _demoAudioTotal = 18 * 1024 * 1024;
+  static const int _demoMergeTotal = _demoVideoTotal + _demoAudioTotal;
 
   List<DownloadTask> get tasks => List.unmodifiable(_tasks);
   String? get lastError => _lastError;
@@ -102,13 +107,192 @@ class DownloadService extends ChangeNotifier {
     // Skip if already downloading, queued, or paused
     if (_tasks.any((t) => t.video.bvid == video.bvid)) return;
 
-    final task = DownloadTask(video: video);
+    final task = DownloadTask(video: video)
+      ..cancelToken = CancelToken();
     _tasks.add(task);
 
     await _storage.updateVideoStatus(video.bvid, DownloadStatus.queued);
     notifyListeners();
 
+    if (_storage.isAppReviewMode) {
+      unawaited(_simulateDemoDownload(task));
+      return;
+    }
+
     _processQueue();
+  }
+
+  Future<void> _waitIfPausedDemoTask(DownloadTask task) async {
+    while (task.status == DownloadStatus.paused) {
+      if (task.cancelToken?.isCancelled ?? false) return;
+      if (!_tasks.contains(task)) return;
+      await Future.delayed(const Duration(milliseconds: 180));
+    }
+  }
+
+  Future<bool> _canContinueDemoTask(DownloadTask task) async {
+    await _waitIfPausedDemoTask(task);
+    return _tasks.contains(task) && !(task.cancelToken?.isCancelled ?? false);
+  }
+
+  Future<void> _simulateDemoDownload(DownloadTask task) async {
+    if (!_demoRunningBvids.add(task.video.bvid)) return;
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!await _canContinueDemoTask(task)) return;
+
+      task.status = DownloadStatus.downloading;
+      task.phase = task.videoStream.receivedBytes >= _demoVideoTotal
+          ? DownloadPhase.downloadingAudio
+          : DownloadPhase.downloadingVideo;
+      notifyListeners();
+
+      var videoReceived = task.videoStream.receivedBytes;
+      while (videoReceived < _demoVideoTotal) {
+        if (!await _canContinueDemoTask(task)) return;
+        task.phase = DownloadPhase.downloadingVideo;
+        videoReceived = (videoReceived + (_demoVideoTotal / 10).round())
+            .clamp(0, _demoVideoTotal)
+            .toInt();
+        task.videoStream.update(videoReceived, _demoVideoTotal);
+        _updateOverallProgress(task, task.videoStream);
+        await _storage.updateVideoStatus(
+          task.video.bvid,
+          DownloadStatus.downloading,
+          progress: task.progress,
+        );
+        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 220));
+      }
+      task.videoStream.markComplete();
+
+      var audioReceived = task.audioStream.receivedBytes;
+      task.phase = DownloadPhase.downloadingAudio;
+      notifyListeners();
+
+      while (audioReceived < _demoAudioTotal) {
+        if (!await _canContinueDemoTask(task)) return;
+        task.phase = DownloadPhase.downloadingAudio;
+        audioReceived = (audioReceived + (_demoAudioTotal / 8).round())
+            .clamp(0, _demoAudioTotal)
+            .toInt();
+        task.audioStream.update(audioReceived, _demoAudioTotal);
+        _updateOverallProgress(task, task.audioStream);
+        await _storage.updateVideoStatus(
+          task.video.bvid,
+          DownloadStatus.downloading,
+          progress: task.progress,
+        );
+        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 180));
+      }
+      task.audioStream.markComplete();
+
+      var mergeReceived = task.mergeStream.receivedBytes;
+      task.phase = DownloadPhase.merging;
+      task.progress = task.progress < 0.98 ? 0.99 : task.progress;
+      notifyListeners();
+
+      while (mergeReceived < _demoMergeTotal) {
+        if (!await _canContinueDemoTask(task)) return;
+        task.phase = DownloadPhase.merging;
+        mergeReceived = (mergeReceived + (_demoMergeTotal / 4).round())
+            .clamp(0, _demoMergeTotal)
+            .toInt();
+        task.mergeStream.update(mergeReceived, _demoMergeTotal);
+        await _storage.updateVideoStatus(
+          task.video.bvid,
+          DownloadStatus.downloading,
+          progress: 0.99,
+        );
+        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 220));
+      }
+      task.mergeStream.markComplete();
+
+      task.status = DownloadStatus.completed;
+      task.progress = 1.0;
+      await _storage.updateVideoStatus(
+        task.video.bvid,
+        DownloadStatus.completed,
+        progress: 1.0,
+        fileSize: _demoMergeTotal,
+      );
+      await _notificationService.showDownloadCompleteNotification(
+        title: '${task.video.title}（演示）',
+      );
+    } catch (e) {
+      debugPrint('Demo download failed for ${task.video.bvid}: $e');
+      task.status = DownloadStatus.failed;
+      await _storage.updateVideoStatus(task.video.bvid, DownloadStatus.failed);
+    } finally {
+      _demoRunningBvids.remove(task.video.bvid);
+      notifyListeners();
+    }
+  }
+
+  void _seedDemoTaskStreams(DownloadTask task, double overallProgress) {
+    final progress = overallProgress.clamp(0.0, 1.0).toDouble();
+    task.progress = progress;
+
+    if (progress <= 0.5) {
+      task.phase = DownloadPhase.downloadingVideo;
+      task.videoStream.update(
+        (_demoVideoTotal * (progress / 0.5)).round(),
+        _demoVideoTotal,
+      );
+      return;
+    }
+
+    task.videoStream.update(_demoVideoTotal, _demoVideoTotal);
+    task.videoStream.markComplete();
+
+    if (progress < 0.98) {
+      task.phase = DownloadPhase.downloadingAudio;
+      final audioProgress = ((progress - 0.5) / 0.48).clamp(0.0, 1.0).toDouble();
+      task.audioStream.update(
+        (_demoAudioTotal * audioProgress).round(),
+        _demoAudioTotal,
+      );
+      return;
+    }
+
+    task.audioStream.update(_demoAudioTotal, _demoAudioTotal);
+    task.audioStream.markComplete();
+    task.phase = DownloadPhase.merging;
+    final mergeProgress = ((progress - 0.98) / 0.02).clamp(0.0, 1.0).toDouble();
+    task.mergeStream.update(
+      (_demoMergeTotal * mergeProgress).round(),
+      _demoMergeTotal,
+    );
+  }
+
+  Future<void> hydrateAppReviewDemoTasks() async {
+    if (!_storage.isAppReviewMode) return;
+
+    _tasks.removeWhere((t) => t.status != DownloadStatus.completed);
+
+    for (final video in _storage.videos) {
+      if (video.downloadStatus != DownloadStatus.paused &&
+          video.downloadStatus != DownloadStatus.queued &&
+          video.downloadStatus != DownloadStatus.downloading) {
+        continue;
+      }
+
+      if (_tasks.any((t) => t.video.bvid == video.bvid)) continue;
+
+      final task = DownloadTask(
+        video: video,
+        progress: video.downloadProgress,
+        status: video.downloadStatus,
+        cancelToken: CancelToken(),
+      );
+      _seedDemoTaskStreams(task, video.downloadProgress);
+      _tasks.add(task);
+    }
+
+    notifyListeners();
   }
 
   Future<void> _processQueue() async {
@@ -322,7 +506,15 @@ class DownloadService extends ChangeNotifier {
         );
     if (task != null && task.status == DownloadStatus.downloading) {
       task.status = DownloadStatus.paused;
-      task.cancelToken?.cancel(); // triggers DioExceptionType.cancel handler
+      if (_storage.isAppReviewMode) {
+        await _storage.updateVideoStatus(
+          task.video.bvid,
+          DownloadStatus.paused,
+          progress: task.progress,
+        );
+      } else {
+        task.cancelToken?.cancel(); // triggers DioExceptionType.cancel handler
+      }
     }
     notifyListeners();
   }
@@ -333,6 +525,20 @@ class DownloadService extends ChangeNotifier {
           orElse: () => null,
         );
     if (task != null && task.status == DownloadStatus.paused) {
+      if (_storage.isAppReviewMode) {
+        task.status = DownloadStatus.downloading;
+        await _storage.updateVideoStatus(
+          task.video.bvid,
+          DownloadStatus.downloading,
+          progress: task.progress,
+        );
+        notifyListeners();
+        if (!_demoRunningBvids.contains(task.video.bvid)) {
+          unawaited(_simulateDemoDownload(task));
+        }
+        return;
+      }
+
       task.status = DownloadStatus.queued;
       await _storage.updateVideoStatus(
         task.video.bvid,
@@ -348,7 +554,9 @@ class DownloadService extends ChangeNotifier {
             orElse: () => null,
           );
       if (video != null) {
-        await _cleanPartialFile(bvid);
+        if (!_storage.isAppReviewMode) {
+          await _cleanPartialFile(bvid);
+        }
         await addDownload(video);
       }
     }
@@ -367,7 +575,9 @@ class DownloadService extends ChangeNotifier {
     // Always reset status in storage (handles orphaned tasks after app restart)
     await _storage.updateVideoStatus(bvid, DownloadStatus.none, progress: 0.0);
     // Clean up partial file on disk
-    await _cleanPartialFile(bvid);
+    if (!_storage.isAppReviewMode) {
+      await _cleanPartialFile(bvid);
+    }
     // Cancel download progress notification
     await _notificationService.cancelDownloadNotification();
     notifyListeners();
@@ -762,6 +972,11 @@ class DownloadService extends ChangeNotifier {
   /// Call on app startup to reset any orphaned downloading/queued statuses.
   /// Paused downloads are preserved so the user can resume them.
   Future<void> cleanupStuckDownloads() async {
+    if (_storage.isAppReviewMode) {
+      await hydrateAppReviewDemoTasks();
+      return;
+    }
+
     final stuck = _storage.videos.where((v) =>
         v.downloadStatus == DownloadStatus.downloading ||
         v.downloadStatus == DownloadStatus.queued);

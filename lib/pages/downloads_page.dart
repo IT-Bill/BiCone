@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/video_item.dart';
 import '../services/download_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/app_review_banner.dart';
 
 class DownloadsPage extends StatefulWidget {
   const DownloadsPage({super.key});
@@ -35,40 +36,48 @@ class _DownloadsPageState extends State<DownloadsPage> {
         middle: Text('下载管理'),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: CupertinoSlidingSegmentedControl<int>(
-                groupValue: _selectedTab,
-                onValueChanged: (v) {
-                  final index = v ?? 0;
-                  setState(() => _selectedTab = index);
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                children: const {
-                  0: Text('进行中'),
-                  1: Text('已完成'),
-                },
-              ),
-            ),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() => _selectedTab = index);
-                },
-                children: const [
-                  _ActiveDownloads(),
-                  _CompletedDownloads(),
-                ],
-              ),
-            ),
-          ],
+        child: Consumer<StorageService>(
+          builder: (context, storage, _) {
+            return Column(
+              children: [
+                if (storage.isAppReviewMode)
+                  const AppReviewBanner(
+                    message: 'App Review Demo 支持模拟下载、暂停、继续与已完成列表，便于审核直接体验下载管理界面。',
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: CupertinoSlidingSegmentedControl<int>(
+                    groupValue: _selectedTab,
+                    onValueChanged: (v) {
+                      final index = v ?? 0;
+                      setState(() => _selectedTab = index);
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    children: const {
+                      0: Text('进行中'),
+                      1: Text('已完成'),
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() => _selectedTab = index);
+                    },
+                    children: const [
+                      _ActiveDownloads(),
+                      _CompletedDownloads(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

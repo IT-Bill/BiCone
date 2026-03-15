@@ -39,6 +39,13 @@ class AuthService extends ChangeNotifier {
 
   /// Try to restore a previous login session from storage.
   Future<void> tryRestoreLogin() async {
+    if (_storage.isAppReviewMode) {
+      debugPrint('Auth: Restoring App Review demo session');
+      _state = AuthState.loggedIn;
+      notifyListeners();
+      return;
+    }
+
     if (!_storage.isLoggedIn) {
       debugPrint('Auth: Not logged in (no stored session)');
       _state = AuthState.notLoggedIn;
@@ -208,8 +215,31 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> enterAppReviewMode({
+    required String userId,
+    required String userName,
+    String? userFace,
+  }) async {
+    _pollTimer?.cancel();
+    await _storage.saveAuth(
+      sessdata: 'app-review-demo',
+      biliJct: 'app-review-demo',
+      userId: userId,
+      refreshToken: 'app-review-demo',
+      userName: userName,
+      userFace: userFace,
+    );
+    await _storage.setAppReviewMode(true);
+    _state = AuthState.loggedIn;
+    _qrUrl = null;
+    _qrcodeKey = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     _pollTimer?.cancel();
+    await _storage.setAppReviewMode(false);
     await _storage.clearAuth();
     _state = AuthState.notLoggedIn;
     _qrUrl = null;
