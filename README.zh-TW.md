@@ -22,7 +22,7 @@
 <!-- ![BiCone 截圖](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone 支援 **Android**、**iOS**（TestFlight / 自簽 IPA）和 **Windows** 平台。
+> BiCone 支援 **Android**、**iOS**（自簽 IPA）和 **Windows** 平台。
 
 > [!WARNING]
 > 本專案及相關程式碼僅供技術研究和學習探討，工具本身不提供任何受版權保護的內容。使用者在使用本工具時，需自行確保遵守相關法律法規，特別是與版權相關的法律條款。開發者不對因使用本工具而產生的任何版權糾紛或法律責任承擔責任。請使用者在使用時謹慎，確保其行為合法合規，並僅在有合法授權的情況下使用相關內容。
@@ -51,8 +51,7 @@
 
 ### iOS
 
-- **TestFlight**（推薦）— 已提交 TestFlight 公測，請透過 [TestFlight 連結](https://testflight.apple.com/join/PLACEHOLDER) 加入
-- **自簽 IPA** — 從 [Releases](https://github.com/IT-Bill/BiCone/releases/latest) 下載 `unsigned.ipa`，使用 AltStore、Sideloadly 等工具自行簽名安裝
+- **自簽 IPA** — 由於 iOS 平台政策限制，目前不再提供 TestFlight 版本。請從 [Releases](https://github.com/IT-Bill/BiCone/releases/latest) 下載 `unsigned.ipa`，並使用 AltStore、Sideloadly 等工具自行簽名安裝
 
 ### Windows
 

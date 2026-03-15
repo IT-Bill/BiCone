@@ -22,7 +22,7 @@
 <!-- ![BiCone Screenshot](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone supports **Android**, **iOS** (TestFlight / self-signed IPA), and **Windows**.
+> BiCone supports **Android**, **iOS** (self-signed IPA), and **Windows**.
 
 > [!WARNING]
 > This project and its code are intended solely for technical research and learning purposes. The tool itself does not provide any copyrighted content. Users must ensure compliance with applicable laws and regulations when using this tool, particularly those related to copyright. The developer assumes no responsibility for any copyright disputes or legal liabilities arising from the use of this tool. Please use it responsibly, ensure your actions are lawful, and only use related content with proper authorization.
@@ -51,8 +51,7 @@ Download the APK for your device architecture from the [Releases](https://github
 
 ### iOS
 
-- **TestFlight** (recommended) — Join the public beta via [TestFlight link](https://testflight.apple.com/join/PLACEHOLDER)
-- **Self-signed IPA** — Download `unsigned.ipa` from [Releases](https://github.com/IT-Bill/BiCone/releases/latest) and sign with AltStore, Sideloadly, etc.
+- **Self-signed IPA only** — Due to iOS policy restrictions, TestFlight builds are no longer available. Download `unsigned.ipa` from [Releases](https://github.com/IT-Bill/BiCone/releases/latest) and sign/install it with AltStore, Sideloadly, or similar tools.
 
 ### Windows
 

@@ -22,7 +22,7 @@
 <!-- ![BiCone スクリーンショット](docs/images/screenshot.png) -->
 
 > [!NOTE]
-> BiCone は **Android**、**iOS**（TestFlight / 自己署名 IPA）、および **Windows** をサポートしています。
+> BiCone は **Android**、**iOS**（自己署名 IPA）、および **Windows** をサポートしています。
 
 > [!WARNING]
 > 本プロジェクトおよびそのコードは、技術研究および学習目的のみを対象としています。本ツール自体は著作権で保護されたコンテンツを提供しません。本ツールの使用において、ユーザーは関連する法令、特に著作権に関する法的規定を遵守する責任を負います。開発者は、本ツールの使用により生じたいかなる著作権紛争または法的責任についても一切の責任を負いません。合法的な範囲内で、適切な権限を得た上でご利用ください。
@@ -51,8 +51,7 @@
 
 ### iOS
 
-- **TestFlight**（推奨）— [TestFlight リンク](https://testflight.apple.com/join/PLACEHOLDER) からパブリックベータに参加
-- **自己署名 IPA** — [Releases](https://github.com/IT-Bill/BiCone/releases/latest) から `unsigned.ipa` をダウンロードし、AltStore、Sideloadly などで署名
+- **自己署名 IPA のみ** — iOS のポリシー制限により、現在は TestFlight 版を提供していません。[Releases](https://github.com/IT-Bill/BiCone/releases/latest) から `unsigned.ipa` をダウンロードし、AltStore、Sideloadly などで署名してインストールしてください。
 
 ### Windows
 
