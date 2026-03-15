@@ -11,22 +11,13 @@ class Subscription {
   Subscription({
     required this.mid,
     required this.name,
-    required String face,
+    required this.face,
     this.sign = '',
     this.paused = false,
     this.downloadPaused = false,
     this.keywords = const [],
     DateTime? addedAt,
-  })  : face = _normalizeFace(face),
-        addedAt = addedAt ?? DateTime.now();
-
-  static String _normalizeFace(String face) {
-    final normalized = face.trim();
-    if (normalized.startsWith('//')) {
-      return 'https:$normalized';
-    }
-    return normalized;
-  }
+  }) : addedAt = addedAt ?? DateTime.now();
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
     return Subscription(

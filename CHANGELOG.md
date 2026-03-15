@@ -2,16 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Added
-- **App Review Demo（iOS）**: 登录页新增 App Review Demo 入口，为 TestFlight / App Review 预置演示账号、订阅、视频列表与下载状态
-- **演示下载流程**: 审核模式下支持模拟下载、暂停、继续与完成通知，便于在无真实 Bilibili 账号的前提下验证核心功能
-- **审核说明文档**: 新增 `APP_REVIEW_NOTES.md`，可直接复制到 App Store Connect 的审核备注中
-
-### Changed
-- 审核模式下禁用实时监控与新增真实订阅入口，避免依赖外部账号和二维码扫描
-
 ## [0.2.4] - 2026-03-04
 
 ### Added

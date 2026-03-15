@@ -22,61 +22,6 @@ class _SubscriptionCardState extends State<SubscriptionCard> {
   Subscription get subscription => widget.subscription;
   VoidCallback? get onMore => widget.onMore;
 
-  String get _faceSource {
-    final source = subscription.face.trim();
-    if (source.startsWith('//')) {
-      return 'https:$source';
-    }
-    return source;
-  }
-
-  bool get _hasNetworkFace {
-    final uri = Uri.tryParse(_faceSource);
-    return uri != null &&
-        (uri.scheme == 'http' || uri.scheme == 'https') &&
-        uri.host.isNotEmpty;
-  }
-
-  bool get _hasAssetFace => _faceSource.startsWith('assets/');
-
-  Widget _buildAvatarFallback(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      color: CupertinoColors.systemGrey5.resolveFrom(context),
-      child: const Icon(
-        CupertinoIcons.person_fill,
-        size: 24,
-        color: CupertinoColors.systemGrey,
-      ),
-    );
-  }
-
-  Widget _buildAvatar(BuildContext context) {
-    if (_hasNetworkFace) {
-      return CachedNetworkImage(
-        imageUrl: _faceSource,
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        placeholder: (_, _) => _buildAvatarFallback(context),
-        errorWidget: (_, _, _) => _buildAvatarFallback(context),
-      );
-    }
-
-    if (_hasAssetFace) {
-      return Image.asset(
-        _faceSource,
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildAvatarFallback(context),
-      );
-    }
-
-    return _buildAvatarFallback(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -94,93 +39,123 @@ class _SubscriptionCardState extends State<SubscriptionCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.systemGrey.withValues(
-                alpha: _isHovered ? 0.08 : 0.04,
-              ),
+              color: CupertinoColors.systemGrey.withValues(alpha: _isHovered ? 0.08 : 0.04),
               blurRadius: _isHovered ? 12 : 8,
               offset: Offset(0, _isHovered ? 4 : 2),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            // ── Avatar ──
-            ClipOval(
-              child: _buildAvatar(context),
-            ),
-            const SizedBox(width: 12),
-
-            // ── Info ──
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    subscription.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+      child: Row(
+        children: [
+          // ── Avatar ──
+          ClipOval(
+            child: subscription.face.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: subscription.face,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    placeholder: (_, _) => Container(
+                      width: 48,
+                      height: 48,
+                      color: CupertinoColors.systemGrey5
+                          .resolveFrom(context),
+                      child: const Icon(CupertinoIcons.person_fill,
+                          size: 24, color: CupertinoColors.systemGrey),
                     ),
+                    errorWidget: (_, _, _) => Container(
+                      width: 48,
+                      height: 48,
+                      color: CupertinoColors.systemGrey5
+                          .resolveFrom(context),
+                      child: const Icon(CupertinoIcons.person_fill,
+                          size: 24, color: CupertinoColors.systemGrey),
+                    ),
+                  )
+                : Container(
+                    width: 48,
+                    height: 48,
+                    color: CupertinoColors.systemGrey5
+                        .resolveFrom(context),
+                    child: const Icon(CupertinoIcons.person_fill,
+                        size: 24, color: CupertinoColors.systemGrey),
                   ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── Info ──
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscription.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'UID: ${subscription.mid}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: CupertinoColors.secondaryLabel
+                        .resolveFrom(context),
+                  ),
+                ),
+                if (subscription.paused) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'UID: ${subscription.mid}',
+                    '已暂停',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      fontSize: 12,
+                      color: CupertinoColors.systemOrange
+                          .resolveFrom(context),
                     ),
                   ),
-                  if (subscription.paused) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '已暂停',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: CupertinoColors.systemOrange.resolveFrom(context),
-                      ),
+                ] else if (subscription.downloadPaused) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '已暂停下载',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemOrange
+                          .resolveFrom(context),
                     ),
-                  ] else if (subscription.downloadPaused) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '已暂停下载',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: CupertinoColors.systemOrange.resolveFrom(context),
-                      ),
+                  ),
+                ] else if (subscription.sign.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subscription.sign,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.tertiaryLabel
+                          .resolveFrom(context),
                     ),
-                  ] else if (subscription.sign.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subscription.sign,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: CupertinoColors.tertiaryLabel.resolveFrom(
-                          context,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
+              ],
+            ),
+          ),
+
+          // ── More ──
+          if (onMore != null)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size.square(32),
+              onPressed: onMore,
+              child: Icon(
+                CupertinoIcons.ellipsis,
+                size: 20,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
               ),
             ),
-
-            // ── More ──
-            if (onMore != null)
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size.square(32),
-                onPressed: onMore,
-                child: Icon(
-                  CupertinoIcons.ellipsis,
-                  size: 20,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
+    ),  // closes MouseRegion
     );
   }
 }
