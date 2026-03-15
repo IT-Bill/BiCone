@@ -51,7 +51,7 @@ Download the APK for your device architecture from the [Releases](https://github
 
 ### iOS
 
-- **Self-signed IPA only** — Due to iOS policy restrictions, TestFlight builds are no longer available. Download `unsigned.ipa` from [Releases](https://github.com/IT-Bill/BiCone/releases/latest) and sign/install it with AltStore, Sideloadly, or similar tools.
+- **Self-signed IPA only** — Due to iOS policy restrictions, TestFlight builds are no longer available. Download `unsigned.ipa` from [Releases](https://github.com/IT-Bill/BiCone/releases/latest) and sign/install it with AltStore, Sideloadly, i4Tools, or similar tools.
 
 ### Windows
 

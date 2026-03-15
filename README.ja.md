@@ -51,7 +51,7 @@
 
 ### iOS
 
-- **自己署名 IPA のみ** — iOS のポリシー制限により、現在は TestFlight 版を提供していません。[Releases](https://github.com/IT-Bill/BiCone/releases/latest) から `unsigned.ipa` をダウンロードし、AltStore、Sideloadly などで署名してインストールしてください。
+- **自己署名 IPA のみ** — iOS のポリシー制限により、現在は TestFlight 版を提供していません。[Releases](https://github.com/IT-Bill/BiCone/releases/latest) から `unsigned.ipa` をダウンロードし、AltStore、Sideloadly、愛思助手（i4Tools）などで署名してインストールしてください。
 
 ### Windows
 

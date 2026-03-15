@@ -51,7 +51,7 @@
 
 ### iOS
 
-- **自签 IPA** — 由于 iOS 平台政策限制，当前不再提供 TestFlight 版本。请从 [Releases](https://github.com/IT-Bill/BiCone/releases/latest) 下载 `unsigned.ipa`，并使用 AltStore、Sideloadly 等工具自行签名安装
+- **自签 IPA** — 由于 iOS 平台政策限制，当前不再提供 TestFlight 版本。请从 [Releases](https://github.com/IT-Bill/BiCone/releases/latest) 下载 `unsigned.ipa`，并使用 AltStore、Sideloadly、爱思助手等工具自行签名安装
 
 ### Windows
 
