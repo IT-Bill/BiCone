@@ -56,7 +56,7 @@ const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
       <div class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-text-tertiary font-medium">
         <span>开源免费</span>
         <span class="hidden sm:inline text-black/15">·</span>
-        <span>Android / Windows / iOS*</span>
+        <span>Android / Windows / iOS（需自签）</span>
         <span class="hidden sm:inline text-black/15">·</span>
         <span>高速下载</span>
         <span class="hidden sm:inline text-black/15">·</span>
@@ -158,7 +158,7 @@ const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
           <!-- Card 5: Cross-platform -->
             <div class="md:col-span-1 rounded-4xl bg-[#F5F5F7] p-8 sm:p-10 flex flex-col reveal-up transition-colors hover:bg-[#EAEAEA]" style="transition-delay: 200ms;">
               <h3 class="text-2xl font-bold text-text-primary tracking-tight">跨平台支持</h3>
-              <p class="text-text-secondary mt-2 sm:mt-3 text-base sm:text-lg font-medium">无缝适配 Android、iOS 与 Windows，体验一致，随处可用。</p>
+              <p class="text-text-secondary mt-2 sm:mt-3 text-base sm:text-lg font-medium">无缝适配 Android、iOS（需自签）与 Windows，体验一致，随处可用。</p>
               <div class="grow flex items-end justify-between px-2">
                 <svg class="w-16 h-16 text-text-tertiary/40" viewBox="93.5 36.5 280 280" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M293.91 212.775c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.901-10.926 10.926-10.926 6.026 0 10.927 4.9 10.927 10.926 0 6.025-4.901 10.93-10.927 10.93m-120.774 0c-6.025 0-10.926-4.905-10.926-10.93 0-6.025 4.9-10.926 10.926-10.926 6.025 0 10.926 4.9 10.926 10.926 0 6.025-4.9 10.93-10.926 10.93m124.693-65.82l21.838-37.822a4.548 4.548 0 00-1.663-6.206 4.549 4.549 0 00-6.206 1.663l-22.111 38.3c-16.91-7.716-35.9-12.015-56.164-12.015-20.264 0-39.254 4.299-56.163 12.015l-22.112-38.3a4.549 4.549 0 00-6.206-1.663 4.545 4.545 0 00-1.663 6.206l21.838 37.822c-37.499 20.395-63.146 58.358-66.898 103.209h262.408c-3.755-44.85-29.402-82.814-66.898-103.21" />
@@ -337,16 +337,20 @@ const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
           </svg>
           <div class="text-center">
             <div class="font-bold text-xl text-white">iOS</div>
+            <div class="mt-2 text-sm text-white/60">因平台政策限制，仅提供 unsigned.ipa</div>
           </div>
           <div class="flex flex-col gap-3 w-full mt-2">
-            <div class="flex items-center justify-center gap-2 px-5 py-3 bg-white/20 text-white/50 rounded-xl text-sm font-semibold cursor-not-allowed">
-              即将推出 / Coming Soon
+            <div class="flex items-center justify-center gap-2 px-5 py-3 bg-white/10 text-white/70 rounded-xl text-sm font-semibold">
+              Unsigned IPA Only
             </div>
             <a data-file="unsigned.ipa"
-               class="download-link flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-white/50 hover:text-white rounded-xl text-sm font-medium transition-colors"
+               class="download-link flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-white/80 hover:text-white rounded-xl text-sm font-medium transition-colors"
                href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
-              自签 IPA（不推荐）
+              下载 unsigned.ipa 并自签安装
             </a>
+            <div class="text-center text-xs text-white/45 leading-5">
+              不再提供 TestFlight，请使用 AltStore / Sideloadly / 爱思助手 等工具自行签名。
+            </div>
           </div>
         </div>
       </div>
