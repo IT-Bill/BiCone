@@ -159,21 +159,102 @@ jobs:
           PY
           )"
 
+          wait_for_release_gone_by_id() {
+            local release_id="$1"
+
+            for i in $(seq 1 15); do
+              CHECK_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
+                "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${release_id}?access_token=${GITEE_TOKEN}")"
+              if [ "${CHECK_CODE}" = "404" ]; then
+                echo "Confirmed Gitee release ${release_id} is gone."
+                return 0
+              fi
+              echo "Waiting Gitee release ${release_id} deletion to settle... (${i}/15, HTTP ${CHECK_CODE})"
+              sleep 3
+            done
+
+            echo "Timed out waiting for Gitee release ${release_id} to disappear."
+            return 1
+          }
+
+          find_oldest_deletable_release() {
+            python3 - <<'PY' "${GITEE_OWNER}" "${GITEE_REPO}" "${GITEE_TOKEN}" "${TAG}" "${NEW_RELEASE_ID:-}"
+          import json
+          import sys
+          import urllib.parse
+          import urllib.request
+
+          owner, repo, token, current_tag, keep_release_id = sys.argv[1:]
+          page = 1
+          candidates = []
+
+          while True:
+              query = urllib.parse.urlencode({
+                  "access_token": token,
+                  "page": page,
+                  "per_page": 100,
+              })
+              url = f"https://gitee.com/api/v5/repos/{owner}/{repo}/releases?{query}"
+              with urllib.request.urlopen(url) as resp:
+                  data = json.load(resp)
+
+              if not isinstance(data, list) or not data:
+                  break
+
+              for item in data:
+                  release_id = str(item.get("id") or "")
+                  tag_name = item.get("tag_name") or ""
+                  created_at = item.get("created_at") or ""
+                  if not release_id:
+                      continue
+                  if keep_release_id and release_id == keep_release_id:
+                      continue
+                  if tag_name == current_tag:
+                      continue
+                  candidates.append((created_at, release_id, tag_name))
+
+              page += 1
+
+          if not candidates:
+              raise SystemExit(1)
+
+          candidates.sort(key=lambda item: item[0])
+          print("\t".join(candidates[0]))
+          PY
+          }
+
+          delete_oldest_gitee_release() {
+            local oldest_info
+            local oldest_created_at
+            local oldest_release_id
+            local oldest_tag
+
+            if ! oldest_info="$(find_oldest_deletable_release)"; then
+              echo "No deletable old Gitee release found to free space."
+              return 1
+            fi
+
+            IFS=$'\t' read -r oldest_created_at oldest_release_id oldest_tag <<< "${oldest_info}"
+
+            if [ -z "${oldest_release_id}" ]; then
+              echo "Failed to parse oldest Gitee release info."
+              return 1
+            fi
+
+            echo "Deleting oldest Gitee release to free attachment space: tag=${oldest_tag:-<no-tag>}, id=${oldest_release_id}, created_at=${oldest_created_at}"
+            curl -sS --fail -X DELETE \
+              "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${oldest_release_id}?access_token=${GITEE_TOKEN}" \
+              >/dev/null
+
+            wait_for_release_gone_by_id "${oldest_release_id}"
+          }
+
           if [ "${HTTP_CODE}" = "200" ] && [ -n "${RELEASE_ID}" ]; then
             echo "Existing Gitee release found: ${RELEASE_ID}, deleting it first..."
             curl -sS --fail -X DELETE \
               "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${RELEASE_ID}?access_token=${GITEE_TOKEN}" \
               >/dev/null
-            for i in $(seq 1 10); do
-              CHECK_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
-                "https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")"
-              if [ "${CHECK_CODE}" = "404" ]; then
-                echo "Confirmed old release is gone."
-                break
-              fi
-              echo "Waiting Gitee release deletion to settle... ($i/10)"
-              sleep 3
-            done
+            wait_for_release_gone_by_id "${RELEASE_ID}"
           elif [ "${HTTP_CODE}" = "200" ] && [ -z "${RELEASE_ID}" ]; then
             echo "Gitee returned 200 but no valid release object for tag ${TAG}; treating as not found."
           elif [ "${HTTP_CODE}" = "404" ]; then
@@ -226,7 +307,7 @@ jobs:
               echo "New release is ready for asset uploads."
               break
             fi
-            echo "Release not ready yet (HTTP ${CHECK_CODE}), retrying... ($i/10)"
+            echo "Release not ready yet (HTTP ${CHECK_CODE}), retrying... (${i}/10)"
             sleep 3
           done
 
@@ -240,8 +321,12 @@ jobs:
             local upload_url="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/releases/${NEW_RELEASE_ID}/attach_files?access_token=${GITEE_TOKEN}"
             local resp_file="${WORKDIR}/upload_${asset_name}.json"
             local http_code=""
+            local transient_attempt=0
+            local cleanup_round=0
 
-            for attempt in $(seq 1 5); do
+            while true; do
+              transient_attempt=$((transient_attempt + 1))
+
               http_code="$(curl -sS \
                 -o "${resp_file}" \
                 -w "%{http_code}" \
@@ -253,16 +338,36 @@ jobs:
                 return 0
               fi
 
-              echo "Upload failed for ${asset_name} (attempt ${attempt}/5, HTTP ${http_code})"
+              echo "Upload failed for ${asset_name} (attempt ${transient_attempt}, HTTP ${http_code})"
               echo "Gitee upload response:"
               cat "${resp_file}" || true
               echo
 
-              sleep $((attempt * 2))
-            done
+              if [ "${http_code}" = "400" ] && grep -Eq '附件配额|quota' "${resp_file}"; then
+                cleanup_round=$((cleanup_round + 1))
+                echo "Detected Gitee attachment quota exhaustion while uploading ${asset_name} (cleanup round ${cleanup_round})."
 
-            echo "Upload permanently failed for ${asset_name} after retries."
-            return 1
+                if [ "${cleanup_round}" -gt 20 ]; then
+                  echo "Exceeded cleanup safety limit while freeing Gitee attachment space."
+                  return 1
+                fi
+
+                if delete_oldest_gitee_release; then
+                  echo "Freed some Gitee space. Retrying ${asset_name} ..."
+                  continue
+                fi
+
+                echo "Unable to free more Gitee attachment space for ${asset_name}."
+                return 1
+              fi
+
+              if [ "${transient_attempt}" -ge 5 ]; then
+                echo "Upload permanently failed for ${asset_name} after retries."
+                return 1
+              fi
+
+              sleep $((transient_attempt * 2))
+            done
           }
 
           echo "Downloading and uploading assets for ${TAG} only..."
