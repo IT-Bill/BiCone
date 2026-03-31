@@ -60,8 +60,44 @@ class DownloadService extends ChangeNotifier {
       _tasks.where((t) => t.status == DownloadStatus.completed).toList();
 
   DownloadService(this._apiService, this._storage, this._notificationService) {
-    _dio.options.headers['User-Agent'] = 'Mozilla/5.0';
+    _dio.options.headers['User-Agent'] =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     _dio.options.headers['Referer'] = 'https://www.bilibili.com';
+  }
+
+  String? _cookieHeader() {
+    final cookies = <String>[];
+    final sessdata = _storage.sessdata;
+    final biliJct = _storage.biliJct;
+    final userId = _storage.userId;
+
+    if (sessdata != null && sessdata.isNotEmpty) {
+      cookies.add('SESSDATA=$sessdata');
+    }
+    if (biliJct != null && biliJct.isNotEmpty) {
+      cookies.add('bili_jct=$biliJct');
+    }
+    if (userId != null && userId.isNotEmpty) {
+      cookies.add('DedeUserID=$userId');
+    }
+
+    return cookies.isEmpty ? null : cookies.join('; ');
+  }
+
+  Map<String, String> _downloadHeaders({String? range}) {
+    final headers = <String, String>{
+      'Referer': 'https://www.bilibili.com',
+      'Origin': 'https://www.bilibili.com',
+    };
+    if (range != null) {
+      headers['Range'] = range;
+    }
+    final cookie = _cookieHeader();
+    if (cookie != null) {
+      headers['Cookie'] = cookie;
+    }
+    return headers;
   }
 
   Future<String> _downloadDir({int? authorMid}) async {
@@ -297,7 +333,7 @@ class DownloadService extends ChangeNotifier {
           task.status = DownloadStatus.failed;
           await _storage.updateVideoStatus(
               task.video.bvid, DownloadStatus.failed);
-          _lastError = '未在源站中找到，\n可能已失效或网络异常';
+          _lastError = '未在源站中找到，\n可能已失效/网络异常/为充电视频';
           _lastErrorBvid = task.video.bvid;
         } else {
           // Network or other recoverable errors — pause instead of fail
@@ -421,13 +457,8 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
-  /// Downgrade HTTPS to HTTP to avoid TLS overhead (like BBDown).
+  /// Keep original scheme for signed media URLs.
   String _forceHttp(String url) {
-    if (url.startsWith('https://')) {
-      // Don't downgrade mcdn domains
-      if (url.contains('.mcdn.bilivideo.cn')) return url;
-      return 'http://${url.substring(8)}';
-    }
     return url;
   }
 
@@ -449,10 +480,7 @@ class DownloadService extends ChangeNotifier {
       final headResp = await _dio.head<void>(
         downloadUrl,
         cancelToken: task.cancelToken,
-        options: Options(headers: {
-          if (_storage.sessdata != null)
-            'Cookie': 'SESSDATA=${_storage.sessdata}',
-        }),
+        options: Options(headers: _downloadHeaders()),
       );
       final contentLength = headResp.headers.value('content-length');
       if (contentLength != null) {
@@ -542,11 +570,9 @@ class DownloadService extends ChangeNotifier {
         cancelToken: task.cancelToken,
         options: Options(
           responseType: ResponseType.stream,
-          headers: {
-            'Range': 'bytes=${seg.start + segDownloaded}-${seg.end}',
-            if (_storage.sessdata != null)
-              'Cookie': 'SESSDATA=${_storage.sessdata}',
-          },
+          headers: _downloadHeaders(
+            range: 'bytes=${seg.start + segDownloaded}-${seg.end}',
+          ),
         ),
       );
 
@@ -618,11 +644,9 @@ class DownloadService extends ChangeNotifier {
       cancelToken: task.cancelToken,
       options: Options(
         responseType: ResponseType.stream,
-        headers: {
-          if (resumeFromBytes > 0) 'Range': 'bytes=$resumeFromBytes-',
-          if (_storage.sessdata != null)
-            'Cookie': 'SESSDATA=${_storage.sessdata}',
-        },
+        headers: _downloadHeaders(
+          range: resumeFromBytes > 0 ? 'bytes=$resumeFromBytes-' : null,
+        ),
       ),
     );
 
