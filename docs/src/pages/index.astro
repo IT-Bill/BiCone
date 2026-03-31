@@ -337,19 +337,27 @@ const fallbackVersion = versionMatch?.[1] ?? '0.0.0';
           </svg>
           <div class="text-center">
             <div class="font-bold text-xl text-white">iOS</div>
-            <div class="mt-2 text-sm text-white/60">因平台政策限制，仅提供 unsigned.ipa</div>
           </div>
           <div class="flex flex-col gap-3 w-full mt-2">
-            <div class="flex items-center justify-center gap-2 px-5 py-3 bg-white/10 text-white/70 rounded-xl text-sm font-semibold">
+            <!-- <div class="flex items-center justify-center gap-2 px-5 py-3 bg-white/10 text-white/70 rounded-xl text-sm font-semibold">
               Unsigned IPA Only
             </div>
             <a data-file="unsigned.ipa"
                class="download-link flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-white/80 hover:text-white rounded-xl text-sm font-medium transition-colors"
                href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
               下载 unsigned.ipa 并自签安装
+            </a> -->
+            <a data-file="unsigned.ipa"
+               class="download-link flex items-center justify-center gap-2 px-5 py-3 bg-white text-black rounded-xl text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
+               href="https://github.com/IT-Bill/BiCone/releases/latest" target="_blank" rel="noopener noreferrer">
+              下载 自签版 并自签安装
             </a>
             <div class="text-center text-xs text-white/45 leading-5">
-              不再提供 TestFlight，请使用 AltStore / Sideloadly / 爱思助手 等工具自行签名。
+              因平台政策限制，请使用 
+              <a href="https://altstore.io/" target="_blank" rel="noopener noreferrer" class="font-bold hover:underline">AltStore</a> / 
+              <a href="https://sideloadly.io/" target="_blank" rel="noopener noreferrer" class="font-bold hover:underline">Sideloadly</a> / 
+              <a href="https://www.aisi.com/" target="_blank" rel="noopener noreferrer" class="font-bold hover:underline">爱思助手</a> 
+              等工具自行签名。
             </div>
           </div>
         </div>
