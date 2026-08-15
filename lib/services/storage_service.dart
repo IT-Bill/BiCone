@@ -7,6 +7,7 @@ import '../models/video_filter.dart';
 import '../models/video_item.dart';
 
 class StorageService extends ChangeNotifier {
+  static const String _hiveStorageDirName = 'BiCone';
   static const String _authBoxName = 'auth';
   static const String _subsBoxName = 'subscriptions';
   static const String _videosBoxName = 'videos';
@@ -24,7 +25,7 @@ class StorageService extends ChangeNotifier {
   List<VideoItem> get videos => _videos;
 
   Future<void> init() async {
-    await Hive.initFlutter();
+    await _initHiveStorage();
     _authBox = await Hive.openBox(_authBoxName);
     _subsBox = await Hive.openBox(_subsBoxName);
     _videosBox = await Hive.openBox(_videosBoxName);
@@ -40,6 +41,28 @@ class StorageService extends ChangeNotifier {
       if (!await dlDir.exists()) await dlDir.create(recursive: true);
       await setDownloadPath(dlDir.path);
     }
+  }
+
+  Future<void> _initHiveStorage() async {
+    if (kIsWeb) {
+      await Hive.initFlutter();
+      return;
+    }
+
+    final hiveDir = await _getHiveStorageDirectory();
+    if (!await hiveDir.exists()) {
+      await hiveDir.create(recursive: true);
+    }
+    await Hive.initFlutter(hiveDir.path);
+  }
+
+  Future<Directory> _getHiveStorageDirectory() async {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final supportDir = await getApplicationSupportDirectory();
+      return Directory('${supportDir.path}/$_hiveStorageDirName');
+    }
+
+    return Directory('${(await getApplicationDocumentsDirectory()).path}/$_hiveStorageDirName');
   }
 
   // ─── Auth ──────────────────────────────────────────────
