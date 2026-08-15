@@ -26,7 +26,11 @@ end
 
 load File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
 
-flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+# The Runner target must own the pod dependencies so CocoaPods can inherit the Flutter pod graph.
+target 'Runner' do
+  use_frameworks! :linkage => :static
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
